@@ -1,0 +1,442 @@
+/* ===== Контакты (карточки с иконками, только контур при наведении) ===== */
+.contacts-info-section {
+    padding: 60px 0 40px;
+    background: var(--color-bg);
+}
+
+.contacts-info-card {
+    background: var(--color-surface);
+    border-radius: 30px;
+    padding: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.contacts-info-title {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.contacts-info-subtitle {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.contacts-info-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+}
+
+/* Карточка контакта - только контур при наведении */
+.contacts-info-item {
+    background: var(--color-surface);
+    border-radius: 20px;
+    padding: 30px 20px;
+    text-align: center;
+    transition: all 0.3s;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 2px solid var(--color-border);
+    cursor: pointer;
+}
+
+.contacts-info-item:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Текст не меняет цвет */
+.contacts-info-item__icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: inline-block;
+}
+
+.contacts-info-item__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.contacts-info-item__value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.contacts-info-item__desc {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* ===== Форма связи ===== */
+.contact-form-section {
+    padding: 40px 0 80px;
+    background: var(--color-bg);
+}
+
+.contact-form-card {
+    display: flex;
+    gap: 50px;
+    background: var(--color-surface);
+    border-radius: 30px;
+    padding: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border);
+}
+
+.contact-form-left {
+    flex: 1;
+}
+
+.contact-form-title {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.contact-form-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    margin-bottom: 30px;
+}
+
+.contact-form-contacts {
+    background: var(--color-bg);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+}
+
+.contact-form-contacts p {
+    margin-bottom: 12px;
+    color: var(--color-text);
+    font-size: 15px;
+}
+
+.contact-form-contacts p:last-child {
+    margin-bottom: 0;
+}
+
+.contact-form-right {
+    flex: 1;
+}
+
+.contact-form-fields {
+    width: 100%;
+    background: var(--color-bg);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid var(--color-border);
+}
+
+.form-field {
+    margin-bottom: 20px;
+}
+
+.form-field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.form-field input,
+.form-field textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: all 0.3s;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--gradient-accent);
+    color: white;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+/* ===== Условия доставки (только контур при наведении) ===== */
+.delivery-section {
+    padding: 80px 0;
+    background-color: var(--color-bg);
+}
+
+.delivery-card {
+    background: var(--color-surface);
+    border-radius: 30px;
+    padding: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border);
+}
+
+.delivery-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.delivery-subtitle {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.delivery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+}
+
+/* Карточка доставки - только контур при наведении */
+.delivery-item {
+    background: var(--color-surface);
+    border-radius: 20px;
+    padding: 28px;
+    transition: all 0.3s;
+    border: 2px solid var(--color-border);
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.delivery-item:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.delivery-item__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+}
+
+.delivery-item__desc {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+/* ===== Реквизиты ===== */
+.requisites-section {
+    padding: 80px 0;
+    background-color: var(--color-bg);
+}
+
+.requisites-card {
+    background: var(--color-surface);
+    border-radius: 30px;
+    padding: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border);
+}
+
+.requisites-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.requisites-table-full {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    background: #f8f9fa;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.requisites-table-full tr {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.requisites-table-full tr:last-child {
+    border-bottom: none;
+}
+
+.requisites-table-full td {
+    padding: 14px 20px;
+    font-size: 15px;
+}
+
+.requisites-table-full td:first-child {
+    font-weight: 600;
+    color: #1e293b;
+    width: 35%;
+    background: #f8f9fa;
+}
+
+.requisites-table-full td:last-child {
+    color: #64748b;
+    background: white;
+}
+
+.download-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--gradient-accent);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.download-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+/* Карта */
+.map {
+    padding: 40px 0;
+    background: var(--color-bg);
+}
+
+.map-container {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+#map {
+    width: 100%;
+    height: 400px;
+}
+
+/* Адаптив */
+@media (max-width: 1024px) {
+    .contacts-info-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .delivery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .contacts-info-card {
+        padding: 30px;
+    }
+    
+    .contacts-info-title {
+        font-size: 28px;
+    }
+    
+    .contacts-info-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .contact-form-card {
+        flex-direction: column;
+        padding: 30px;
+    }
+    
+    .contact-form-title {
+        font-size: 28px;
+    }
+    
+    .contact-form-fields {
+        padding: 20px;
+    }
+    
+    .delivery-card {
+        padding: 30px;
+    }
+    
+    .delivery-title {
+        font-size: 28px;
+    }
+    
+    .delivery-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .requisites-card {
+        padding: 30px;
+    }
+    
+    .requisites-title {
+        font-size: 28px;
+    }
+    
+    .requisites-table-full td {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+    
+    .download-link {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    #map {
+        height: 300px;
+    }
+}
+.form-success {
+    background: #dcfce7;
+    color: #166534;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.form-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}

@@ -1,0 +1,239 @@
+document.addEventListener('DOMContentLoaded', function () {
+    if (!window.CartStorage) return;
+
+    var products = Array.isArray(window.ALL_PRODUCTS_FOR_CART) ? window.ALL_PRODUCTS_FOR_CART : [];
+
+    var emptyBlock = document.getElementById('cart-empty');
+    var listBlock = document.getElementById('cart-list');
+    var sidebar = document.getElementById('cart-sidebar');
+    var clearBtn = document.getElementById('cart-clear');
+    var printBtn = document.getElementById('cart-print');
+    var checkoutOpenBtn = document.getElementById('cart-checkout-open');
+    var checkoutModal = document.getElementById('cartCheckoutModal');
+    var checkoutCloseBtn = document.getElementById('cart-checkout-close');
+    var checkoutForm = document.getElementById('cart-checkout-form');
+    var checkoutStatus = document.getElementById('cart-checkout-status');
+    var subtotalEl = document.getElementById('cartSubtotal');
+    var discountEl = document.getElementById('cartDiscount');
+    var totalEl = document.getElementById('cartTotal');
+
+    function getCartRows() {
+        var cart = window.CartStorage.readItems();
+        return cart
+            .map(function (item) {
+                var product = products.find(function (p) { return String(p.id) === String(item.id); });
+                if (!product) return null;
+                return { product: product, qty: item.qty };
+            })
+            .filter(Boolean);
+    }
+
+    function esc(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function render() {
+        var rows = getCartRows();
+        if (!rows.length) {
+            emptyBlock.style.display = 'block';
+            listBlock.style.display = 'none';
+            sidebar.style.display = 'none';
+            listBlock.innerHTML = '';
+            if (subtotalEl) subtotalEl.textContent = '0.00';
+            if (discountEl) discountEl.textContent = '0.00';
+            if (totalEl) totalEl.textContent = '0.00';
+            return;
+        }
+
+        emptyBlock.style.display = 'none';
+        listBlock.style.display = 'block';
+        sidebar.style.display = 'flex';
+
+        var html = '';
+        rows.forEach(function (row) {
+            var p = row.product;
+            var base = window.APP_BASE || '';
+            var productHref = base + '/product.php?slug=' + encodeURIComponent(p.slug || '');
+            html += '<div class="cart-item">';
+            html += '<div class="cart-item__img"><a href="' + esc(productHref) + '"><img src="' + esc(p.image || 'products/medikator.jpg') + '" alt="' + esc(p.name) + '"></a></div>';
+            html += '<div class="cart-item__body">';
+            html += '<div class="cart-item__name"><a href="' + esc(productHref) + '">' + esc(p.name) + '</a></div>';
+            html += '<div class="cart-item__meta">Серия: ' + esc(p.series || '-') + '</div>';
+            html += '<div class="cart-item__qty">';
+            html += '<button type="button" data-cart-minus="' + esc(p.id) + '">-</button>';
+            html += '<span>' + esc(row.qty) + '</span>';
+            html += '<button type="button" data-cart-plus="' + esc(p.id) + '">+</button>';
+            html += '</div></div>';
+            html += '<button type="button" class="cart-item__remove" data-cart-remove="' + esc(p.id) + '">Удалить</button>';
+            html += '</div>';
+        });
+        listBlock.innerHTML = html;
+        recalcTotals();
+    }
+
+    function getItemsPayload() {
+        return window.CartStorage.readItems().map(function (it) {
+            return { id: parseInt(it.id, 10) || 0, qty: parseInt(it.qty, 10) || 1 };
+        }).filter(function (it) { return it.id >= 0 && it.qty > 0; });
+    }
+
+    function recalcTotals(promoCode) {
+        if (!subtotalEl || !discountEl || !totalEl) return;
+        var items = getItemsPayload();
+        var fd = new FormData();
+        fd.set('items', JSON.stringify(items));
+        if (promoCode) fd.set('promo_code', promoCode);
+        fetch('includes/api_promo_calc.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data) return;
+                subtotalEl.textContent = Number(data.subtotal || 0).toFixed(2);
+                discountEl.textContent = Number(data.discount_total || 0).toFixed(2);
+                totalEl.textContent = Number(data.total || 0).toFixed(2);
+            })
+            .catch(function () {});
+    }
+
+    function orderText() {
+        var rows = getCartRows();
+        if (!rows.length) return 'Корзина пуста';
+        return rows.map(function (row) {
+            return '- ' + row.product.name + ' (x' + row.qty + ')';
+        }).join('\n');
+    }
+
+    function setCheckoutStatus(message, isError) {
+        checkoutStatus.textContent = message;
+        checkoutStatus.classList.toggle('is-error', !!isError);
+        checkoutStatus.classList.toggle('is-success', !isError);
+    }
+
+    function openCheckout() {
+        checkoutModal.classList.add('is-active');
+        checkoutModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeCheckout() {
+        checkoutModal.classList.remove('is-active');
+        checkoutModal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('click', function (event) {
+        var removeBtn = event.target.closest('[data-cart-remove]');
+        if (removeBtn) {
+            window.CartStorage.removeItem(removeBtn.getAttribute('data-cart-remove'));
+            window.CartStorage.syncButtons();
+            window.CartStorage.updateCounter();
+            render();
+            return;
+        }
+
+        var plusBtn = event.target.closest('[data-cart-plus]');
+        if (plusBtn) {
+            window.CartStorage.addItem(plusBtn.getAttribute('data-cart-plus'), 1);
+            window.CartStorage.syncButtons();
+            window.CartStorage.updateCounter();
+            render();
+            return;
+        }
+
+        var minusBtn = event.target.closest('[data-cart-minus]');
+        if (minusBtn) {
+            var id = minusBtn.getAttribute('data-cart-minus');
+            var nextQty = Math.max(0, window.CartStorage.getQtyById(id) - 1);
+            window.CartStorage.setItemQty(id, nextQty);
+            window.CartStorage.syncButtons();
+            window.CartStorage.updateCounter();
+            render();
+        }
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            window.CartStorage.clearCart();
+            window.CartStorage.syncButtons();
+            window.CartStorage.updateCounter();
+            render();
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener('click', function () {
+            window.print();
+        });
+    }
+
+    if (checkoutOpenBtn) {
+        checkoutOpenBtn.addEventListener('click', openCheckout);
+    }
+    if (checkoutCloseBtn) {
+        checkoutCloseBtn.addEventListener('click', closeCheckout);
+    }
+
+    if (checkoutModal) {
+        checkoutModal.addEventListener('click', function (event) {
+            if (event.target === checkoutModal) closeCheckout();
+        });
+    }
+
+    if (checkoutForm) {
+        var promoInput = checkoutForm.querySelector('input[name="promo_code"]');
+        if (promoInput) {
+            var t = null;
+            promoInput.addEventListener('input', function () {
+                clearTimeout(t);
+                t = setTimeout(function () {
+                    recalcTotals(String(promoInput.value || '').trim());
+                }, 350);
+            });
+        }
+
+        checkoutForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            var rows = getCartRows();
+            if (!rows.length) {
+                setCheckoutStatus('Корзина пуста', true);
+                return;
+            }
+
+            var submitBtn = checkoutForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            setCheckoutStatus('Отправляем заказ...', false);
+
+            var fd = new FormData(checkoutForm);
+            fd.set('items', JSON.stringify(getItemsPayload()));
+
+            fetch('includes/api_checkout.php', {
+                method: 'POST',
+                body: fd
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data && data.success) {
+                    setCheckoutStatus(data.message || 'Заказ отправлен', false);
+                    checkoutForm.reset();
+                    window.CartStorage.clearCart();
+                    window.CartStorage.syncButtons();
+                    window.CartStorage.updateCounter();
+                    render();
+                    setTimeout(closeCheckout, 1000);
+                } else {
+                    setCheckoutStatus((data && data.message) || 'Ошибка отправки', true);
+                }
+            })
+            .catch(function () {
+                setCheckoutStatus('Ошибка сети. Попробуйте еще раз.', true);
+            })
+            .finally(function () {
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    render();
+});

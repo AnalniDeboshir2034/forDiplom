@@ -1,0 +1,64 @@
+# Pretty URL (CHPU) for this multi-page PHP site
+# Goals:
+# - no rewrite for real static files (css/js/images/etc.)
+# - no cyclic redirects
+# - prevent broken CSS due to relative asset paths by removing trailing slashes
+
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Remove trailing slash for requests that are NOT real directories.
+    # This keeps relative asset URLs like "css/style.css" working.
+    RewriteCond %{REQUEST_URI} ^(.+)/+$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.+)/+$ /$1 [R=301,L]
+
+    # Canonical redirects:
+    # - keep pretty URLs as the only "ideal" ones
+    # - avoid redirect loops by redirecting only from the old entrypoints
+    RewriteRule ^catalog\.php$ /catalog [R=301,L,QSD]
+    RewriteRule ^contacts\.php$ /contacts [R=301,L,QSD]
+    RewriteRule ^compare\.php$ /compare [R=301,L,QSD]
+    RewriteRule ^cart\.php$ /cart [R=301,L,QSD]
+    RewriteRule ^privacy\.php$ /privacy [R=301,L,QSD]
+    RewriteRule ^sitemap\.php$ /sitemap.xml [R=301,L,QSD]
+
+    RewriteRule ^index\.php$ / [R=301,L,QSD]
+
+    RewriteCond %{QUERY_STRING} ^slug=([^&]+) [NC]
+    RewriteRule ^product\.php$ /product/%1 [R=301,L,QSD]
+
+    RewriteCond %{REQUEST_URI} ^/catalog/?$ [NC]
+    RewriteCond %{QUERY_STRING} (^|&)category=[^&]+ [NC]
+    RewriteRule ^catalog/?$ /catalog [R=301,L,QSD]
+
+    RewriteRule ^admin/index\.php$ /admin [R=301,L,QSD]
+    RewriteRule ^admin/filters\.php$ /admin/filters [R=301,L,QSD]
+    RewriteRule ^admin/medicators\.php$ /admin/medicators [R=301,L,QSD]
+    RewriteRule ^admin/gallery\.php$ /admin/gallery [R=301,L,QSD]
+    RewriteRule ^admin/settings\.php$ /admin/settings [R=301,L,QSD]
+
+    # Never rewrite existing files or directories (so CSS/JS/images work).
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Routes (no trailing slash needed; redirect above will canonicalize)
+    RewriteRule ^$ index.php [L]
+    RewriteRule ^catalog/?$ catalog.php [L]
+    RewriteRule ^contacts/?$ contacts.php [L]
+    RewriteRule ^compare/?$ compare.php [L]
+    RewriteRule ^cart/?$ cart.php [L]
+    RewriteRule ^privacy/?$ privacy.php [L]
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
+    RewriteRule ^product/([^/]+)/?$ product.php?slug=$1 [L,QSA]
+
+    RewriteRule ^admin/?$ admin/index.php [L]
+    RewriteRule ^admin/filters/?$ admin/filters.php [L]
+    RewriteRule ^admin/medicators/?$ admin/medicators.php [L]
+    RewriteRule ^admin/gallery/?$ admin/gallery.php [L]
+    RewriteRule ^admin/settings/?$ admin/settings.php [L]
+</IfModule>
+

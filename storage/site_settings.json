@@ -1,0 +1,27 @@
+{
+  "contacts": {
+    "phone": "+7 (800) 123-45-67",
+    "email": "info@medicator.ru",
+    "address": "г. Москва, ул. Примерная, 1",
+    "work_hours": "Пн-Пт: 9:00 — 18:00"
+  },
+  "header": {
+    "brand_name": "7 company",
+    "lead_button_text": "Оставить заявку"
+  },
+  "footer": {
+    "company_description": "Профессиональные медикаторы-дозаторы",
+    "copyright": "© 2026 7company. Все права защищены."
+  },
+  "index": {
+    "hero_title_top": "МЕДИКАТОРЫ",
+    "hero_title_bottom": "ДЛЯ ХОЗЯЙСТВ",
+    "hero_text": "Точное дозирование препаратов и добавок в систему водоснабжения. Надёжные решения для птицеводства, свиноводства и животноводства."
+  },
+  "containers": {
+    "index_cta_title": "РАССЧИТАЕМ СТОИМОСТЬ",
+    "index_cta_subtitle": "ПОД ВАШ ЗАПРОС",
+    "contacts_intro_title": "СВЯЖИТЕСЬ",
+    "contacts_intro_subtitle": "С НАМИ"
+  }
+}
