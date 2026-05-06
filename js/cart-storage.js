@@ -102,6 +102,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!button) return;
         event.preventDefault();
 
+        if (!window.APP_IS_AUTH) {
+            var loginUrl = window.APP_LOGIN_URL || '/login.php';
+            var registerUrl = window.APP_REGISTER_URL || '/register.php';
+            if (window.AppToast && typeof window.AppToast.show === 'function') {
+                window.AppToast.show('Для добавления в корзину войдите или зарегистрируйтесь', 'error');
+            }
+            setTimeout(function () {
+                var shouldRegister = window.confirm('Для добавления в корзину нужна авторизация.\nНажмите OK для регистрации или Отмена для входа.');
+                var target = shouldRegister ? registerUrl : loginUrl;
+                var sep = target.indexOf('?') === -1 ? '?' : '&';
+                window.location.href = target + sep + 'redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+            }, 150);
+            return;
+        }
+
         var id = button.getAttribute('data-cart-id');
         if (!id) return;
         addItem(id, 1);

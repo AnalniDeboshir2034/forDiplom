@@ -3,7 +3,9 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/site_settings.php';
 require_once __DIR__ . '/includes/water_treatment.php';
 require_once __DIR__ . '/includes/seo.php';
+require_once __DIR__ . '/includes/auth_lib.php';
 $siteSettings = load_site_settings();
+$currentUser = app_current_user($mysqli);
 
 if (!$mysqli || $mysqli->connect_error) {
     die("Нет соединения с БД");
@@ -86,7 +88,7 @@ if (is_array($waterTreatmentProduct)) {
         <section class="cart-print-header" aria-hidden="true">
             <div class="container">
                 <div class="cart-print-brand">
-                    <img src="/products/icon.png" alt="Medikator.ru">
+                    <img src="<?= htmlspecialchars(app_url('products/icon.png'), ENT_QUOTES, 'UTF-8') ?>" alt="Medikator.ru">
                     <h1>Заказ Medikator.ru</h1>
                 </div>
                 <div class="cart-print-contacts">
@@ -147,8 +149,8 @@ if (is_array($waterTreatmentProduct)) {
                     <option value="courier">Курьер</option>
                     <option value="pickup">Самовывоз</option>
                 </select>
-                <input type="text" name="delivery_address" placeholder="Адрес доставки (если курьер)">
-                <input type="text" name="pickup_point" placeholder="Пункт самовывоза (если самовывоз)">
+                <input type="text" name="delivery_address" placeholder="Адрес доставки (если курьер)" data-delivery-address style="display:none;">
+                <input type="text" name="pickup_point" placeholder="Пункт самовывоза (если самовывоз)" data-pickup-point style="display:none;">
                 <select name="payment_type" required>
                     <option value="" selected disabled>Способ оплаты</option>
                     <option value="invoice">Юр. лицо — накладная</option>
@@ -175,6 +177,12 @@ if (is_array($waterTreatmentProduct)) {
 
     <script>
         window.ALL_PRODUCTS_FOR_CART = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.APP_PROFILE = <?= json_encode([
+            'name' => (string)($currentUser['name'] ?? ''),
+            'phone' => (string)($currentUser['phone'] ?? ''),
+            'email' => (string)($currentUser['email'] ?? ''),
+            'address' => (string)($currentUser['address'] ?? ''),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     </script>
     <script src="js/cart-page.js" defer></script>
         <script>

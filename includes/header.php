@@ -44,20 +44,20 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
             <nav class="nav" id="siteMainNav">
                 <button type="button" class="header-nav-close" id="headerNavClose" aria-label="Закрыть меню">×</button>
                 <ul class="nav__list">                    <li class="nav__item nav-catalog">
-                        <a href="<?= htmlspecialchars(app_url('catalog.php'), ENT_QUOTES, 'UTF-8') ?>" class="nav__link nav-catalog__toggle" id="headerCatalogToggle" aria-expanded="false">
+                        <a href="/catalog" class="nav__link nav-catalog__toggle" id="headerCatalogToggle" aria-expanded="false">
                             Каталог <span class="nav-catalog__arrow">▾</span>
                         </a>
                         <ul class="nav-catalog__dropdown" id="headerCatalogDropdown">
-                            <li><a href="<?= htmlspecialchars(app_url('catalog.php'), ENT_QUOTES, 'UTF-8') ?>">Все товары</a></li>
+                            <li><a href="/catalog">Все товары</a></li>
                             <?php foreach ($headerCatalogFilters as $f): ?>
-                                <li><a href="<?= htmlspecialchars(app_url('catalog.php#cat=' . rawurlencode($f['slug'])), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($f['name']) ?></a></li>
+                                <li><a href="/catalog#cat=<?= rawurlencode($f['slug']) ?>"><?= htmlspecialchars($f['name']) ?></a></li>
                             <?php endforeach; ?>
                         </ul>
                     </li>
-                    <li class="nav__item"><a href="<?= htmlspecialchars(app_url('compare.php'), ENT_QUOTES, 'UTF-8') ?>" class="nav__link nav__link--compare">Сравнение <span class="nav-cart-count" data-compare-count>0</span></a></li>
-                    <li class="nav__item"><a href="<?= htmlspecialchars(app_url('contacts.php'), ENT_QUOTES, 'UTF-8') ?>" class="nav__link">Контакты</a></li>
+                    <li class="nav__item"><a href="/compare" class="nav__link nav__link--compare">Сравнение <span class="nav-cart-count" data-compare-count>0</span></a></li>
+                    <li class="nav__item"><a href="/contacts" class="nav__link">Контакты</a></li>
                 </ul>
-            </nav>
+            </nav>  
 
             <form class="header-search" id="headerSearchForm">
                 <input id="headerSearchInput" name="q" type="text" placeholder="Поиск товара...">
@@ -105,6 +105,7 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
             <form id="headerLeadForm" class="header-lead-form">
                 <input type="text" name="name" placeholder="Ваше имя" required>
                 <input type="tel" name="phone" placeholder="Ваш телефон" required>
+                <input type="text" name="callback_time" placeholder="Удобное время для звонка (например, 14:00-16:00)">
                 <textarea name="message" rows="4" placeholder="Сообщение (необязательно)"></textarea>
                 <label class="form-consent">
                     <input type="checkbox" class="form-consent__check" required>
@@ -123,6 +124,9 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
 
     <script>
         window.APP_BASE = <?= json_encode(APP_BASE, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        window.APP_IS_AUTH = <?= $currentUser ? 'true' : 'false' ?>;
+        window.APP_LOGIN_URL = <?= json_encode(app_url('login.php'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        window.APP_REGISTER_URL = <?= json_encode(app_url('register.php'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
     </script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">

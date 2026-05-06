@@ -57,6 +57,10 @@ function app_get_migrations(): array
                 if (!db_column_exists($mysqli, 'medicator', 'price')) {
                     db_exec($mysqli, "ALTER TABLE `medicator` ADD COLUMN `price` DECIMAL(10,2) NULL DEFAULT NULL AFTER `slug`");
                 }
+                if (!db_column_exists($mysqli, 'medicator', 'manufacturer')) {
+                    db_exec($mysqli, "ALTER TABLE `medicator` ADD COLUMN `manufacturer` VARCHAR(255) NULL DEFAULT NULL AFTER `price`");
+                    db_exec($mysqli, "UPDATE `medicator` SET `manufacturer` = `m_case` WHERE (`manufacturer` IS NULL OR `manufacturer` = '') AND `m_case` IS NOT NULL AND `m_case` <> ''");
+                }
             }
         ],
         [
@@ -70,6 +74,21 @@ function app_get_migrations(): array
                 }
                 if (!db_column_exists($mysqli, 'user', 'created_at')) {
                     db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP AFTER `unp`");
+                }
+                if (!db_column_exists($mysqli, 'user', 'account_type')) {
+                    db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `account_type` VARCHAR(16) NOT NULL DEFAULT 'individual' AFTER `role`");
+                }
+                if (!db_column_exists($mysqli, 'user', 'company_name')) {
+                    db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `company_name` VARCHAR(255) NULL DEFAULT NULL AFTER `account_type`");
+                }
+                if (!db_column_exists($mysqli, 'user', 'representative_name')) {
+                    db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `representative_name` VARCHAR(255) NULL DEFAULT NULL AFTER `company_name`");
+                }
+                if (!db_column_exists($mysqli, 'user', 'phone')) {
+                    db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `phone` VARCHAR(64) NULL DEFAULT NULL AFTER `representative_name`");
+                }
+                if (!db_column_exists($mysqli, 'user', 'address')) {
+                    db_exec($mysqli, "ALTER TABLE `user` ADD COLUMN `address` VARCHAR(255) NULL DEFAULT NULL AFTER `phone`");
                 }
                 if (!db_column_exists($mysqli, 'user', 'role')) {
                     // role exists in dump, but keep safe in case DB differs
@@ -104,6 +123,31 @@ function app_get_migrations(): array
         [
             'name' => 'orders expansion + order_items',
             'apply' => function (mysqli $mysqli): void {
+                if (!db_table_exists($mysqli, 'orders')) {
+                    db_exec($mysqli, "CREATE TABLE `orders` (
+                        `id` INT NOT NULL AUTO_INCREMENT,
+                        `customer_id` INT NULL DEFAULT NULL,
+                        `user_id` INT NULL DEFAULT NULL,
+                        `order_date` DATE NOT NULL,
+                        `status` VARCHAR(32) NOT NULL DEFAULT 'new',
+                        `delivery_type` VARCHAR(32) NULL DEFAULT NULL,
+                        `delivery_address` VARCHAR(1024) NULL DEFAULT NULL,
+                        `pickup_point` VARCHAR(255) NULL DEFAULT NULL,
+                        `payment_type` VARCHAR(64) NULL DEFAULT NULL,
+                        `promo_code_id` INT NULL DEFAULT NULL,
+                        `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        `discount_total` DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        `total` DECIMAL(10,2) NOT NULL DEFAULT 0,
+                        `customer_name` VARCHAR(255) NULL DEFAULT NULL,
+                        `customer_phone` VARCHAR(64) NULL DEFAULT NULL,
+                        `customer_email` VARCHAR(255) NULL DEFAULT NULL,
+                        `comment` TEXT NULL DEFAULT NULL,
+                        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        `updated_at` DATETIME NULL DEFAULT NULL,
+                        PRIMARY KEY (`id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                }
+
                 if (!db_column_exists($mysqli, 'orders', 'status')) {
                     db_exec($mysqli, "ALTER TABLE `orders`
                         ADD COLUMN `user_id` INT NULL DEFAULT NULL AFTER `customer_id`,

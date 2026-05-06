@@ -90,12 +90,38 @@ function app_current_user(mysqli $mysqli): ?array
     $uid = (int)($_SESSION['user_id'] ?? 0);
     if ($uid <= 0) return null;
 
-    $stmt = $mysqli->prepare("SELECT id, login, email, name, unp, role FROM `user` WHERE id = ? LIMIT 1");
-    $stmt->bind_param('i', $uid);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $row = $res ? $res->fetch_assoc() : null;
-    $stmt->close();
-    return $row ?: null;
+    // Prefer full profile columns, but keep compatibility with older DB schema.
+    $queries = [
+        "SELECT id, login, email, name, unp, role, account_type, company_name, representative_name, phone, address FROM `user` WHERE id = ? LIMIT 1",
+        "SELECT id, login, email, name, unp, role FROM `user` WHERE id = ? LIMIT 1",
+        "SELECT id, login, email, role FROM `user` WHERE id = ? LIMIT 1",
+    ];
+
+    foreach ($queries as $sql) {
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) {
+            continue;
+        }
+        $stmt->bind_param('i', $uid);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+
+        if ($row) {
+            if (!array_key_exists('name', $row)) $row['name'] = '';
+            if (!array_key_exists('unp', $row)) $row['unp'] = '';
+            if (!array_key_exists('email', $row)) $row['email'] = '';
+            if (!array_key_exists('role', $row)) $row['role'] = 'user';
+            if (!array_key_exists('account_type', $row)) $row['account_type'] = 'individual';
+            if (!array_key_exists('company_name', $row)) $row['company_name'] = '';
+            if (!array_key_exists('representative_name', $row)) $row['representative_name'] = '';
+            if (!array_key_exists('phone', $row)) $row['phone'] = '';
+            if (!array_key_exists('address', $row)) $row['address'] = '';
+            return $row;
+        }
+    }
+
+    return null;
 }
 

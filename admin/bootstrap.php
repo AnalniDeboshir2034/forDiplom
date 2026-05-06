@@ -4,6 +4,25 @@ session_start();
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/site_settings.php';
 
+function admin_url(string $path = ''): string
+{
+    static $base = null;
+    if ($base === null) {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', (string)$_SERVER['SCRIPT_NAME']) : '/admin/index.php';
+        $base = rtrim(str_replace('\\', '/', dirname($script)), '/');
+        if ($base === '') {
+            $base = '/admin';
+        }
+    }
+
+    $path = ltrim($path, '/');
+    if ($path === '') {
+        return $base . '/';
+    }
+
+    return $base . '/' . $path;
+}
+
 function admin_req($key)
 {
     return trim($_POST[$key] ?? '');
@@ -57,32 +76,12 @@ function admin_page_start($title)
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><?= htmlspecialchars($title) ?></title>
-        <style>
-            body { font-family: Inter, Arial, sans-serif; background: #f5f7fb; margin: 0; color: #1f2937; }
-            .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
-            .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; background:#fff; padding:14px 16px; border-radius: 14px; border:1px solid #e5e7eb; position: sticky; top: 8px; z-index: 11; }
-            .card { background: #fff; border-radius: 14px; padding: 18px; margin: 16px 0; border: 1px solid #e5e7eb; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04); }
-            .grid { display: grid; grid-template-columns: repeat(2, minmax(260px,1fr)); gap: 12px; }
-            label { display:block; font-size:13px; margin-bottom: 4px; color:#475569; font-weight:600; }
-            input, textarea, select { width: 100%; padding: 10px 12px; margin: 4px 0; box-sizing: border-box; border:1px solid #dbe1ea; border-radius: 10px; background:#fff; }
-            input:focus, textarea:focus, select:focus { outline: none; border-color:#f97316; box-shadow:0 0 0 3px rgba(249,115,22,.15); }
-            table { width: 100%; border-collapse: collapse; font-size: 14px; }
-            td, th { border: 1px solid #edf0f5; padding: 8px; text-align: left; vertical-align: top; }
-            th { background: #f8fafc; font-weight: 700; }
-            button { padding: 9px 13px; border: 0; border-radius: 10px; background: #1f5cff; color: #fff; cursor: pointer; font-weight:600; }
-            .danger { background: #c62828; }
-            .muted { color: #666; font-size: 13px; }
-            .nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-            .nav a { text-decoration: none; background: #fff; color: #1f5cff; border-radius: 999px; padding: 8px 12px; border: 1px solid #d6ddff; font-weight:600; }
-            .nav a:hover { border-color:#1f5cff; }
-            .msg { background: #e9fff2; border: 1px solid #c6f3da; color: #075f33; padding: 10px; border-radius: 10px; margin: 10px 0; }
-            details > summary { list-style: none; padding: 8px 0; }
-            details > summary::-webkit-details-marker { display:none; }
-            @media (max-width: 900px){ .grid{grid-template-columns:1fr;} .top{position:static;} }
-        </style>
+        <link rel="stylesheet" href="<?= htmlspecialchars(app_url('css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
+        <link rel="stylesheet" href="<?= htmlspecialchars(app_url('admin/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
     </head>
-    <body>
-    <div class="wrap">
+    <body class="admin-page">
+    <main class="main">
+    <div class="container wrap">
         <div class="top">
             <h1><?= htmlspecialchars($title) ?></h1>
             <form method="post">
@@ -90,22 +89,22 @@ function admin_page_start($title)
             </form>
         </div>
         <div class="nav">
-            <a href="/admin">Главная админки</a>
-            <a href="/admin/medicators">Медикаторы</a>
-            <a href="/admin/filters">Фильтры / Субфильтры</a>
-            <a href="/admin/settings">JSON настройки</a>
-            <a href="/admin/orders">Заказы</a>
-            <a href="/admin/users">Пользователи</a>
-            <a href="/admin/promo_codes">Промокоды</a>
-            <a href="/admin/reviews">Отзывы</a>
-            <a href="/admin/migrate">Миграции БД</a>
+            <a href="<?= htmlspecialchars(admin_url('index.php'), ENT_QUOTES, 'UTF-8') ?>">Главная админки</a>
+            <a href="<?= htmlspecialchars(admin_url('medicators.php'), ENT_QUOTES, 'UTF-8') ?>">Медикаторы</a>
+            <a href="<?= htmlspecialchars(admin_url('filters.php'), ENT_QUOTES, 'UTF-8') ?>">Фильтры / Субфильтры</a>
+            <a href="<?= htmlspecialchars(admin_url('settings.php'), ENT_QUOTES, 'UTF-8') ?>">JSON настройки</a>
+            <a href="<?= htmlspecialchars(admin_url('orders.php'), ENT_QUOTES, 'UTF-8') ?>">Заказы</a>
+            <a href="<?= htmlspecialchars(admin_url('users.php'), ENT_QUOTES, 'UTF-8') ?>">Пользователи</a>
+            <a href="<?= htmlspecialchars(admin_url('promo_codes.php'), ENT_QUOTES, 'UTF-8') ?>">Промокоды</a>
+            <a href="<?= htmlspecialchars(admin_url('reviews.php'), ENT_QUOTES, 'UTF-8') ?>">Отзывы</a>
+            <a href="<?= htmlspecialchars(admin_url('reports.php'), ENT_QUOTES, 'UTF-8') ?>">Отчеты</a>
         </div>
     <?php
 }
 
 function admin_page_end()
 {
-    echo '</div></body></html>';
+    echo '</div></main></body></html>';
 }
 
 function slugify_ru_to_en($text, $fallback = 'item')

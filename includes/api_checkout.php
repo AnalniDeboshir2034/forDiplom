@@ -7,6 +7,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 app_session_start();
+app_apply_migrations($mysqli);
+$userId = (int)($_SESSION['user_id'] ?? 0);
+if ($userId <= 0) {
+    app_json(['success' => false, 'message' => 'Для оформления заказа войдите в аккаунт'], 401);
+}
 
 $name = trim((string)($_POST['name'] ?? ''));
 $phone = trim((string)($_POST['phone'] ?? ''));
@@ -68,15 +73,31 @@ if (count($ids) === 0) {
 // Fetch products with prices (NULL => 0).
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $types = str_repeat('i', count($ids));
-$stmt = $mysqli->prepare("SELECT id, name, COALESCE(price, 0) AS price FROM medicator WHERE id IN ($placeholders)");
-$stmt->bind_param($types, ...$ids);
-$stmt->execute();
-$res = $stmt->get_result();
 $products = [];
-while ($res && ($row = $res->fetch_assoc())) {
-    $products[(int)$row['id']] = $row;
+$stmt = $mysqli->prepare("SELECT id, name, COALESCE(price, 0) AS price FROM medicator WHERE id IN ($placeholders)");
+if ($stmt) {
+    $stmt->bind_param($types, ...$ids);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($res && ($row = $res->fetch_assoc())) {
+        $products[(int)$row['id']] = $row;
+    }
+    $stmt->close();
+} else {
+    // Fallback for older schema where `price` column may not exist.
+    $stmtLegacy = $mysqli->prepare("SELECT id, name FROM medicator WHERE id IN ($placeholders)");
+    if (!$stmtLegacy) {
+        app_json(['success' => false, 'message' => 'Ошибка БД: не удалось получить товары корзины'], 500);
+    }
+    $stmtLegacy->bind_param($types, ...$ids);
+    $stmtLegacy->execute();
+    $resLegacy = $stmtLegacy->get_result();
+    while ($resLegacy && ($row = $resLegacy->fetch_assoc())) {
+        $row['price'] = 0;
+        $products[(int)$row['id']] = $row;
+    }
+    $stmtLegacy->close();
 }
-$stmt->close();
 
 $subtotal = 0.0;
 $lines = [];
@@ -136,9 +157,6 @@ if ($promo !== '' && db_table_exists($mysqli, 'promo_codes')) {
 }
 
 $total = max(0.0, $subtotal - $discountTotal);
-
-$userId = (int)($_SESSION['user_id'] ?? 0);
-if ($userId <= 0) $userId = null;
 
 // Create order.
 $stmt = $mysqli->prepare("INSERT INTO `orders`
@@ -200,6 +218,54 @@ if ($promoApplied && $promoId) {
     }
 }
 
+// ==================== ОТПРАВКА ПИСЕМ ====================
+require_once __DIR__ . '/mail_lib.php';
+
+$clientBody = "Спасибо за заказ №{$orderId}!\n\n";
+$clientBody .= "Ваш заказ:\n";
+foreach ($lines as $ln) {
+    $clientBody .= "- {$ln['product_name_snapshot']} x {$ln['qty']} = " . number_format($ln['line_total'], 2) . " руб.\n";
+}
+$clientBody .= "\nСумма: " . number_format($subtotal, 2) . " руб.";
+if ($discountTotal > 0) {
+    $clientBody .= "\nСкидка: -" . number_format($discountTotal, 2) . " руб.";
+}
+$clientBody .= "\nИтого: " . number_format($total, 2) . " руб.";
+$clientBody .= "\nДоставка: " . ($deliveryType === 'courier' ? "Курьером, адрес: {$deliveryAddress}" : "Самовывоз, пункт: {$pickupPoint}");
+$clientBody .= "\nОплата: ";
+if ($paymentType === 'invoice') $clientBody .= "Счет на email";
+elseif ($paymentType === 'card_on_delivery') $clientBody .= "Картой при получении";
+else $clientBody .= "ЕРИП";
+if ($comment) $clientBody .= "\nКомментарий: {$comment}";
+$clientBody .= "\n\nС уважением, DiplomKbip";
+
+// Отправка клиенту
+if ($email !== '' && app_is_email($email)) {
+    $clientError = null;
+    app_send_mail($email, "Заказ №{$orderId} на DiplomKbip", $clientBody, $clientError);
+    if ($clientError) error_log("Письмо клиенту {$orderId}: {$clientError}");
+}
+
+// Отправка админу (ЗАМЕНИ НА СВОЙ EMAIL если нет admin@diplomkbip.xyz)
+$adminBody = "Новый заказ №{$orderId}!\n\n";
+$adminBody .= "Клиент: {$name}, тел: {$phone}";
+if ($email) $adminBody .= ", email: {$email}";
+$adminBody .= "\n\nСостав заказа:\n";
+foreach ($lines as $ln) {
+    $adminBody .= "- {$ln['product_name_snapshot']} x {$ln['qty']} = " . number_format($ln['line_total'], 2) . " руб.\n";
+}
+$adminBody .= "\nСумма: " . number_format($subtotal, 2) . " руб.";
+if ($discountTotal > 0) $adminBody .= "\nСкидка: -" . number_format($discountTotal, 2) . " руб.";
+$adminBody .= "\nИтого: " . number_format($total, 2) . " руб.";
+$adminBody .= "\nДоставка: " . ($deliveryType === 'courier' ? "Курьером, адрес: {$deliveryAddress}" : "Самовывоз, пункт: {$pickupPoint}");
+$adminBody .= "\nОплата: " . ($paymentType === 'invoice' ? 'Счет на email' : ($paymentType === 'card_on_delivery' ? 'Картой при получении' : 'ЕРИП'));
+if ($comment) $adminBody .= "\nКомментарий: {$comment}";
+
+$adminError = null;
+app_send_mail("admin@diplomkbip.xyz", "Новый заказ №{$orderId}", $adminBody, $adminError);
+if ($adminError) error_log("Письмо админу {$orderId}: {$adminError}");
+// ======================================================
+
 app_json([
     'success' => true,
     'message' => 'Заказ оформлен',
@@ -208,4 +274,3 @@ app_json([
     'discount_total' => round($discountTotal, 2),
     'total' => round($total, 2),
 ]);
-

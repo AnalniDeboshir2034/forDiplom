@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $name = htmlspecialchars(trim($_POST['name'] ?? ''));
 $phone = htmlspecialchars(trim($_POST['phone'] ?? ''));
+$callbackTime = htmlspecialchars(trim($_POST['callback_time'] ?? ''));
 $message = htmlspecialchars(trim($_POST['message'] ?? ''));
 $form_type = htmlspecialchars(trim($_POST['form_type'] ?? 'Контактная форма'));
 
@@ -43,7 +44,7 @@ $leadData = [
         'SOURCE_DESCRIPTION' => $form_type . ' на сайте',
         'ASSIGNED_BY_ID' => 1,
         'STATUS_ID' => 'NEW',
-        'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nСообщение: $message\n\nДата: " . date('d.m.Y H:i:s'),
+        'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nУдобное время: $callbackTime\nСообщение: $message\n\nДата: " . date('d.m.Y H:i:s'),
     ]
 ];
 

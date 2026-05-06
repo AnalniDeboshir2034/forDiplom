@@ -42,8 +42,19 @@ if ($user) {
         <div class="auth-wrap">
             <h1>Регистрация</h1>
             <form id="registerForm">
-                <input type="text" name="name" placeholder="Имя профиля (необязательно)">
+                <select name="account_type" id="accountType" required>
+                    <option value="individual" selected>Физическое лицо</option>
+                    <option value="legal">Юридическое лицо</option>
+                </select>
+                <input type="text" name="name" placeholder="Имя профиля">
+                <input type="tel" name="phone" placeholder="Номер телефона">
                 <input type="email" name="email" placeholder="E-mail" required>
+                <div id="legalFields" style="display:none;">
+                    <input type="text" name="company_name" placeholder="Название компании">
+                    <input type="text" name="representative_name" placeholder="ФИО представителя">
+                    <input type="text" name="unp" placeholder="УНП">
+                    <input type="text" name="address" placeholder="Адрес компании">
+                </div>
                 <input type="password" name="password" placeholder="Пароль (мин. 8 символов)" required>
                 <button class="btn btn-primary" type="submit">Создать аккаунт</button>
             </form>
@@ -57,6 +68,18 @@ if ($user) {
 </main>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
 <script>
+var accountType = document.getElementById('accountType');
+var legalFields = document.getElementById('legalFields');
+function syncLegalFields(){
+  var isLegal = accountType && accountType.value === 'legal';
+  legalFields.style.display = isLegal ? 'block' : 'none';
+  legalFields.querySelectorAll('input').forEach(function(i){ i.required = isLegal; });
+}
+if (accountType) {
+  accountType.addEventListener('change', syncLegalFields);
+  syncLegalFields();
+}
+
 document.getElementById('registerForm').addEventListener('submit', function(e){
   e.preventDefault();
   var msg = document.getElementById('registerMsg');
@@ -64,14 +87,31 @@ document.getElementById('registerForm').addEventListener('submit', function(e){
   msg.className = 'auth-msg';
   var fd = new FormData(e.target);
   fetch('<?= htmlspecialchars(app_url('includes/auth_register.php'), ENT_QUOTES, 'UTF-8') ?>', { method:'POST', body: fd })
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+      return r.text().then(function(text){
+        var data = null;
+        try { data = JSON.parse(text); } catch (e) {}
+        if (!data) {
+          data = {
+            success: false,
+            message: text ? text.replace(/<[^>]*>/g, '').trim().slice(0, 250) : 'Сервер вернул некорректный ответ'
+          };
+        }
+        data.__ok = r.ok;
+        return data;
+      });
+    })
     .then(function(data){
       if (data && data.success){
         msg.textContent = data.message || 'OK';
         msg.classList.add('is-success');
-        setTimeout(function(){ window.location.href = '<?= htmlspecialchars(app_url('account.php'), ENT_QUOTES, 'UTF-8') ?>'; }, 300);
+        var nextUrl = new URLSearchParams(window.location.search).get('redirect');
+        var safeNext = (nextUrl && nextUrl.charAt(0) === '/' && nextUrl.indexOf('//') !== 0)
+          ? nextUrl
+          : '<?= htmlspecialchars(app_url('account.php'), ENT_QUOTES, 'UTF-8') ?>';
+        setTimeout(function(){ window.location.href = safeNext; }, 300);
       } else {
-        msg.textContent = (data && data.message) || 'Ошибка';
+        msg.textContent = (data && data.message) || (data && data.__ok === false ? 'Ошибка сервера' : 'Ошибка');
         msg.classList.add('is-error');
       }
     })

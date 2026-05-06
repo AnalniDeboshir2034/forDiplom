@@ -3,7 +3,7 @@
 if (!function_exists('seo_site_base_url')) {
     function seo_site_base_url(): string
     {
-        return 'https://medikator.ru';
+        return app_site_url();
     }
 }
 

@@ -25,13 +25,44 @@ $statusFilter = trim((string)($_GET['status'] ?? 'pending'));
 $allowed = ['pending', 'approved', 'rejected', ''];
 if (!in_array($statusFilter, $allowed, true)) $statusFilter = 'pending';
 
+$perPage = 20;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+$totalRows = 0;
+$totalPages = 1;
+
 $reviews = [];
+function admin_review_status_label(string $status): string
+{
+    $map = ['pending' => 'На модерации', 'approved' => 'Одобрен', 'rejected' => 'Отклонен'];
+    return $map[$status] ?? $status;
+}
 if (db_table_exists($mysqli, 'reviews')) {
     if ($statusFilter === '') {
-        $res = $mysqli->query("SELECT r.*, u.login AS user_login FROM reviews r LEFT JOIN user u ON u.id = r.user_id ORDER BY r.id DESC LIMIT 300");
+        $countRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM reviews");
+        $totalRows = (int)(($countRes ? $countRes->fetch_assoc()['cnt'] : 0) ?? 0);
     } else {
-        $stmt = $mysqli->prepare("SELECT r.*, u.login AS user_login FROM reviews r LEFT JOIN user u ON u.id = r.user_id WHERE r.status = ? ORDER BY r.id DESC LIMIT 300");
-        $stmt->bind_param('s', $statusFilter);
+        $countStmt = $mysqli->prepare("SELECT COUNT(*) AS cnt FROM reviews WHERE status = ?");
+        $countStmt->bind_param('s', $statusFilter);
+        $countStmt->execute();
+        $countRes = $countStmt->get_result();
+        $totalRows = (int)(($countRes ? $countRes->fetch_assoc()['cnt'] : 0) ?? 0);
+        $countStmt->close();
+    }
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+        $offset = ($page - 1) * $perPage;
+    }
+
+    if ($statusFilter === '') {
+        $stmt = $mysqli->prepare("SELECT r.*, u.login AS user_login FROM reviews r LEFT JOIN user u ON u.id = r.user_id ORDER BY r.id DESC LIMIT ? OFFSET ?");
+        $stmt->bind_param('ii', $perPage, $offset);
+        $stmt->execute();
+        $res = $stmt->get_result();
+    } else {
+        $stmt = $mysqli->prepare("SELECT r.*, u.login AS user_login FROM reviews r LEFT JOIN user u ON u.id = r.user_id WHERE r.status = ? ORDER BY r.id DESC LIMIT ? OFFSET ?");
+        $stmt->bind_param('sii', $statusFilter, $perPage, $offset);
         $stmt->execute();
         $res = $stmt->get_result();
     }
@@ -47,11 +78,12 @@ admin_page_start('Отзывы');
 <div class="card">
     <h2>Модерация отзывов</h2>
     <p class="muted">Фильтр:
-        <a href="/admin/reviews?status=pending">pending</a> ·
-        <a href="/admin/reviews?status=approved">approved</a> ·
-        <a href="/admin/reviews?status=rejected">rejected</a> ·
-        <a href="/admin/reviews?status=">all</a>
+        <a href="<?= htmlspecialchars(admin_url('reviews.php?status=pending'), ENT_QUOTES, 'UTF-8') ?>">на модерации</a> ·
+        <a href="<?= htmlspecialchars(admin_url('reviews.php?status=approved'), ENT_QUOTES, 'UTF-8') ?>">одобренные</a> ·
+        <a href="<?= htmlspecialchars(admin_url('reviews.php?status=rejected'), ENT_QUOTES, 'UTF-8') ?>">отклоненные</a> ·
+        <a href="<?= htmlspecialchars(admin_url('reviews.php?status='), ENT_QUOTES, 'UTF-8') ?>">все</a>
     </p>
+    <p class="muted">Всего: <?= (int)$totalRows ?> · Страница <?= (int)$page ?> из <?= (int)$totalPages ?></p>
 
     <?php if (!db_table_exists($mysqli, 'reviews')): ?>
         <p class="muted">Таблица reviews не найдена. Запусти миграции.</p>
@@ -76,17 +108,17 @@ admin_page_start('Отзывы');
                     <td><?= htmlspecialchars((string)($r['user_login'] ?? '')) ?></td>
                     <td><?= (int)$r['rating'] ?></td>
                     <td><?= nl2br(htmlspecialchars((string)$r['text'])) ?></td>
-                    <td><?= htmlspecialchars((string)$r['status']) ?></td>
+                    <td><?= htmlspecialchars(admin_review_status_label((string)$r['status'])) ?></td>
                     <td>
                         <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;">
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
                             <input type="hidden" name="action" value="approve">
-                            <button type="submit" name="moderate" value="1" class="btn" style="background:#16a34a;">Approve</button>
+                            <button type="submit" name="moderate" value="1" class="btn" style="background:#16a34a;">Одобрить</button>
                         </form>
                         <form method="post" style="margin-top:6px;">
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
                             <input type="hidden" name="action" value="reject">
-                            <button type="submit" name="moderate" value="1" class="danger">Reject</button>
+                            <button type="submit" name="moderate" value="1" class="danger">Отклонить</button>
                         </form>
                     </td>
                 </tr>
@@ -95,6 +127,25 @@ admin_page_start('Отзывы');
         </table>
     <?php endif; ?>
 </div>
+
+<?php if ($totalPages > 1): ?>
+<div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <?php
+        $buildReviewPageUrl = function (int $targetPage) use ($statusFilter): string {
+            $qs = ['page' => $targetPage, 'status' => $statusFilter];
+            return admin_url('reviews.php?' . http_build_query($qs));
+        };
+        ?>
+        <?php if ($page > 1): ?>
+            <a href="<?= htmlspecialchars($buildReviewPageUrl($page - 1), ENT_QUOTES, 'UTF-8') ?>">← Назад</a>
+        <?php endif; ?>
+        <?php if ($page < $totalPages): ?>
+            <a href="<?= htmlspecialchars($buildReviewPageUrl($page + 1), ENT_QUOTES, 'UTF-8') ?>">Вперед →</a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php admin_page_end(); ?>
 

@@ -1,0 +1,71 @@
+# Pretty URL (CHPU) for this multi-page PHP site
+# Goals:
+# - no rewrite for real static files (css/js/images/etc.)
+# - no cyclic redirects
+# - prevent broken CSS due to relative asset paths
+
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # =============================================
+    # 1. ВАЖНО: Если это реальный файл или папка — НЕ ТРОГАЕМ вообще
+    # =============================================
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # =============================================
+    # 2. Удаляем слэш в конце только для HTML/PHP страниц (НЕ для статики)
+    # =============================================
+    RewriteCond %{REQUEST_URI} /$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [R=301,L]
+
+    # =============================================
+    # 3. Массовые редиректы с .php на ЧПУ (только прямые обращения)
+    # =============================================
+    RewriteCond %{THE_REQUEST} \s/((?!admin/)[^/]+)\.php[\s?] [NC]
+    RewriteRule ^ /%1? [R=301,L]
+
+    # =============================================
+    # 4. Редиректы для админки отдельно
+    # =============================================
+    RewriteCond %{THE_REQUEST} \s/admin/([^/]+)\.php[\s?] [NC]
+    RewriteRule ^ /admin/%1? [R=301,L]
+
+    # =============================================
+    # 5. Редирект sitemap.php → sitemap.xml
+    # =============================================
+    RewriteCond %{THE_REQUEST} \s/sitemap\.php[\s?] [NC]
+    RewriteRule ^ /sitemap.xml [R=301,L]
+
+    # =============================================
+    # 6. Редирект product.php?slug=... → /product/...
+    # =============================================
+    RewriteCond %{QUERY_STRING} ^slug=([^&]+)$ [NC]
+    RewriteRule ^product\.php$ /product/%1? [R=301,L]
+
+    # =============================================
+    # 7. ЧПУ маршрутизация (без слэшей на конце)
+    # =============================================
+    RewriteRule ^$ index.php [L]
+    
+    RewriteRule ^catalog$ catalog.php [L]
+    RewriteRule ^contacts$ contacts.php [L]
+    RewriteRule ^compare$ compare.php [L]
+    RewriteRule ^cart$ cart.php [L]
+    RewriteRule ^privacy$ privacy.php [L]
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
+    
+    RewriteRule ^product/([^/]+)$ product.php?slug=$1 [L,QSA]
+    
+    RewriteRule ^admin$ admin/index.php [L]
+    RewriteRule ^admin/filters$ admin/filters.php [L]
+    RewriteRule ^admin/medicators$ admin/medicators.php [L]
+    RewriteRule ^admin/gallery$ admin/gallery.php [L]
+    RewriteRule ^admin/settings$ admin/settings.php [L]
+
+</IfModule>

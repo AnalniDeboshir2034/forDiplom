@@ -89,9 +89,9 @@ document.addEventListener('DOMContentLoaded', function () {
         fd.set('items', JSON.stringify(items));
         if (promoCode) fd.set('promo_code', promoCode);
         fetch('includes/api_promo_calc.php', { method: 'POST', body: fd })
-            .then(function (r) { return r.json(); })
+            .then(parseApiResponse)
             .then(function (data) {
-                if (!data) return;
+                if (!data || !data.success) return;
                 subtotalEl.textContent = Number(data.subtotal || 0).toFixed(2);
                 discountEl.textContent = Number(data.discount_total || 0).toFixed(2);
                 totalEl.textContent = Number(data.total || 0).toFixed(2);
@@ -113,7 +113,28 @@ document.addEventListener('DOMContentLoaded', function () {
         checkoutStatus.classList.toggle('is-success', !isError);
     }
 
+    function parseApiResponse(response) {
+        return response.text().then(function (text) {
+            var data = null;
+            try { data = JSON.parse(text); } catch (e) {}
+            if (!data || typeof data !== 'object') {
+                data = {
+                    success: false,
+                    message: text ? text.replace(/<[^>]*>/g, '').trim().slice(0, 250) : 'Сервер вернул некорректный ответ'
+                };
+            }
+            data.__ok = response.ok;
+            return data;
+        });
+    }
+
     function openCheckout() {
+        if (!window.APP_IS_AUTH) {
+            var loginUrl = window.APP_LOGIN_URL || '/login.php';
+            var sep = loginUrl.indexOf('?') === -1 ? '?' : '&';
+            window.location.href = loginUrl + sep + 'redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+            return;
+        }
         checkoutModal.classList.add('is-active');
         checkoutModal.setAttribute('aria-hidden', 'false');
     }
@@ -182,6 +203,35 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (checkoutForm) {
+        var deliveryTypeSelect = checkoutForm.querySelector('select[name="delivery_type"]');
+        var deliveryAddressInput = checkoutForm.querySelector('[data-delivery-address]');
+        var pickupPointInput = checkoutForm.querySelector('[data-pickup-point]');
+        var profile = window.APP_PROFILE || {};
+        var nameInput = checkoutForm.querySelector('input[name="name"]');
+        var phoneInput = checkoutForm.querySelector('input[name="phone"]');
+        var emailInput = checkoutForm.querySelector('input[name="email"]');
+        if (nameInput && profile.name) nameInput.value = profile.name;
+        if (phoneInput && profile.phone) phoneInput.value = profile.phone;
+        if (emailInput && profile.email) emailInput.value = profile.email;
+
+        function syncDeliveryFields() {
+            if (!deliveryTypeSelect || !deliveryAddressInput || !pickupPointInput) return;
+            var value = String(deliveryTypeSelect.value || '');
+            var isCourier = value === 'courier';
+            var isPickup = value === 'pickup';
+            deliveryAddressInput.style.display = isCourier ? '' : 'none';
+            pickupPointInput.style.display = isPickup ? '' : 'none';
+            deliveryAddressInput.required = isCourier;
+            pickupPointInput.required = isPickup;
+            if (isCourier && profile.address && !deliveryAddressInput.value) {
+                deliveryAddressInput.value = profile.address;
+            }
+        }
+        if (deliveryTypeSelect) {
+            deliveryTypeSelect.addEventListener('change', syncDeliveryFields);
+            syncDeliveryFields();
+        }
+
         var promoInput = checkoutForm.querySelector('input[name="promo_code"]');
         if (promoInput) {
             var t = null;
@@ -212,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 body: fd
             })
-            .then(function (res) { return res.json(); })
+            .then(parseApiResponse)
             .then(function (data) {
                 if (data && data.success) {
                     setCheckoutStatus(data.message || 'Заказ отправлен', false);
@@ -223,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     render();
                     setTimeout(closeCheckout, 1000);
                 } else {
-                    setCheckoutStatus((data && data.message) || 'Ошибка отправки', true);
+                    setCheckoutStatus((data && data.message) || (data && data.__ok === false ? 'Ошибка сервера' : 'Ошибка отправки'), true);
                 }
             })
             .catch(function () {

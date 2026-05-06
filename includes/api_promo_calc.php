@@ -6,6 +6,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     app_json(['success' => false, 'message' => 'Неверный метод'], 405);
 }
 
+app_apply_migrations($mysqli);
+
 $rawItems = (string)($_POST['items'] ?? '');
 $promo = trim((string)($_POST['promo_code'] ?? ''));
 
@@ -37,15 +39,29 @@ if (count($ids) === 0) {
 // Fetch prices (NULL => 0).
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $types = str_repeat('i', count($ids));
-$stmt = $mysqli->prepare("SELECT id, name, COALESCE(price, 0) AS price FROM medicator WHERE id IN ($placeholders)");
-$stmt->bind_param($types, ...$ids);
-$stmt->execute();
-$res = $stmt->get_result();
 $products = [];
-while ($res && ($row = $res->fetch_assoc())) {
-    $products[(int)$row['id']] = $row;
+$stmt = $mysqli->prepare("SELECT id, name, COALESCE(price, 0) AS price FROM medicator WHERE id IN ($placeholders)");
+if ($stmt) {
+    $stmt->bind_param($types, ...$ids);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($res && ($row = $res->fetch_assoc())) {
+        $products[(int)$row['id']] = $row;
+    }
+    $stmt->close();
+} else {
+    $stmtLegacy = $mysqli->prepare("SELECT id, name FROM medicator WHERE id IN ($placeholders)");
+    if ($stmtLegacy) {
+        $stmtLegacy->bind_param($types, ...$ids);
+        $stmtLegacy->execute();
+        $resLegacy = $stmtLegacy->get_result();
+        while ($resLegacy && ($row = $resLegacy->fetch_assoc())) {
+            $row['price'] = 0;
+            $products[(int)$row['id']] = $row;
+        }
+        $stmtLegacy->close();
+    }
 }
-$stmt->close();
 
 $subtotal = 0.0;
 foreach ($qtyMap as $pid => $qty) {

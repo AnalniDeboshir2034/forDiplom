@@ -146,6 +146,8 @@
     border-radius: 16px;
     padding: 24px;
     position: relative;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
 }
 
 .cart-modal__close {
@@ -166,12 +168,26 @@
 }
 
 .cart-checkout-form input:not([type="checkbox"]),
+.cart-checkout-form select,
 .cart-checkout-form textarea {
     width: 100%;
     border: 1px solid var(--color-border);
     border-radius: 10px;
     padding: 11px 12px;
     font: inherit;
+    background: #fff;
+}
+
+.form-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.form-consent__check {
+    margin-top: 3px;
 }
 
 .cart-checkout-status {

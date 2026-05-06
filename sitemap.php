@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/water_treatment.php';
 
 header('Content-Type: application/xml; charset=UTF-8');
 
-$baseUrl = 'https://medikator.ru';
+$baseUrl = rtrim(app_site_url(), '/');
 $now = gmdate('Y-m-d');
 
 $urls = [
@@ -15,19 +15,19 @@ $urls = [
         'lastmod' => $now,
     ],
     [
-        'loc' => $baseUrl . '/catalog',
+        'loc' => $baseUrl . app_url('catalog.php'),
         'changefreq' => 'daily',
         'priority' => '0.9',
         'lastmod' => $now,
     ],
     [
-        'loc' => $baseUrl . '/contacts',
+        'loc' => $baseUrl . app_url('contacts.php'),
         'changefreq' => 'monthly',
         'priority' => '0.8',
         'lastmod' => $now,
     ],
     [
-        'loc' => $baseUrl . '/privacy',
+        'loc' => $baseUrl . app_url('privacy.php'),
         'changefreq' => 'yearly',
         'priority' => '0.3',
         'lastmod' => $now,
@@ -58,7 +58,7 @@ if ($mysqli && !$mysqli->connect_error) {
             }
 
             $urls[] = [
-                'loc' => $baseUrl . '/product/' . rawurlencode($slug),
+                'loc' => $baseUrl . app_product_url($slug),
                 'changefreq' => 'weekly',
                 'priority' => '0.8',
                 'lastmod' => $lastmod,
@@ -71,7 +71,7 @@ if ($mysqli && !$mysqli->connect_error) {
 $waterTreatmentProduct = load_water_treatment_product();
 if (is_array($waterTreatmentProduct) && !empty($waterTreatmentProduct['slug'])) {
     $urls[] = [
-        'loc' => $baseUrl . '/product/' . rawurlencode((string)$waterTreatmentProduct['slug']),
+        'loc' => $baseUrl . app_product_url((string)$waterTreatmentProduct['slug']),
         'changefreq' => 'weekly',
         'priority' => '0.8',
         'lastmod' => $now,

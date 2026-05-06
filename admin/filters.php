@@ -91,9 +91,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$filters = $mysqli->query("SELECT * FROM filter ORDER BY id DESC");
-$subfilters = $mysqli->query("SELECT * FROM subfilter ORDER BY id DESC");
-$relations = $mysqli->query("SELECT fr.id, f.name AS filter_name, sf.name AS subfilter_name FROM filter_Relationships fr JOIN filter f ON f.id=fr.filter_id JOIN subfilter sf ON sf.id=fr.subfilter_id ORDER BY fr.id DESC");
+$perPage = 20;
+$fPage = max(1, (int)($_GET['fpage'] ?? 1));
+$sfPage = max(1, (int)($_GET['sfpage'] ?? 1));
+$rPage = max(1, (int)($_GET['rpage'] ?? 1));
+
+$filtersTotalRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM filter");
+$filtersTotal = (int)(($filtersTotalRes ? $filtersTotalRes->fetch_assoc()['cnt'] : 0) ?? 0);
+$filtersPages = max(1, (int)ceil($filtersTotal / $perPage));
+if ($fPage > $filtersPages) $fPage = $filtersPages;
+$filtersOffset = ($fPage - 1) * $perPage;
+$stmtFilters = $mysqli->prepare("SELECT * FROM filter ORDER BY id DESC LIMIT ? OFFSET ?");
+$stmtFilters->bind_param('ii', $perPage, $filtersOffset);
+$stmtFilters->execute();
+$filters = $stmtFilters->get_result();
+
+$subfiltersTotalRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM subfilter");
+$subfiltersTotal = (int)(($subfiltersTotalRes ? $subfiltersTotalRes->fetch_assoc()['cnt'] : 0) ?? 0);
+$subfiltersPages = max(1, (int)ceil($subfiltersTotal / $perPage));
+if ($sfPage > $subfiltersPages) $sfPage = $subfiltersPages;
+$subfiltersOffset = ($sfPage - 1) * $perPage;
+$stmtSubfilters = $mysqli->prepare("SELECT * FROM subfilter ORDER BY id DESC LIMIT ? OFFSET ?");
+$stmtSubfilters->bind_param('ii', $perPage, $subfiltersOffset);
+$stmtSubfilters->execute();
+$subfilters = $stmtSubfilters->get_result();
+
+$relationsTotalRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM filter_Relationships");
+$relationsTotal = (int)(($relationsTotalRes ? $relationsTotalRes->fetch_assoc()['cnt'] : 0) ?? 0);
+$relationsPages = max(1, (int)ceil($relationsTotal / $perPage));
+if ($rPage > $relationsPages) $rPage = $relationsPages;
+$relationsOffset = ($rPage - 1) * $perPage;
+$stmtRelations = $mysqli->prepare("SELECT fr.id, f.name AS filter_name, sf.name AS subfilter_name FROM filter_Relationships fr JOIN filter f ON f.id=fr.filter_id JOIN subfilter sf ON sf.id=fr.subfilter_id ORDER BY fr.id DESC LIMIT ? OFFSET ?");
+$stmtRelations->bind_param('ii', $perPage, $relationsOffset);
+$stmtRelations->execute();
+$relations = $stmtRelations->get_result();
 $fList = $mysqli->query("SELECT id,name FROM filter ORDER BY id DESC");
 $sfList = $mysqli->query("SELECT id,name FROM subfilter ORDER BY id DESC");
 
@@ -146,6 +177,7 @@ if ($success) {
 
 <div class="card">
     <h2>Filter</h2>
+    <p class="muted">Всего: <?= (int)$filtersTotal ?> · Страница <?= (int)$fPage ?> из <?= (int)$filtersPages ?></p>
     <table>
         <tr><th>ID</th><th>Name</th><th>Slug</th><th>Opis</th><th>Обновить</th><th>Удалить</th></tr>
         <?php while ($f = $filters->fetch_assoc()): ?>
@@ -172,9 +204,16 @@ if ($success) {
         <?php endwhile; ?>
     </table>
 </div>
+<?php if ($filtersPages > 1): ?>
+<div class="card">
+    <?php if ($fPage > 1): ?><a href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . ($fPage - 1) . '&sfpage=' . $sfPage . '&rpage=' . $rPage), ENT_QUOTES, 'UTF-8') ?>">← Filter назад</a><?php endif; ?>
+    <?php if ($fPage < $filtersPages): ?><a style="margin-left:10px;" href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . ($fPage + 1) . '&sfpage=' . $sfPage . '&rpage=' . $rPage), ENT_QUOTES, 'UTF-8') ?>">Filter вперед →</a><?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="card">
     <h2>Subfilter</h2>
+    <p class="muted">Всего: <?= (int)$subfiltersTotal ?> · Страница <?= (int)$sfPage ?> из <?= (int)$subfiltersPages ?></p>
     <table>
         <tr><th>ID</th><th>Name</th><th>Slug</th><th>Opis</th><th>Обновить</th><th>Удалить</th></tr>
         <?php while ($sf = $subfilters->fetch_assoc()): ?>
@@ -201,9 +240,16 @@ if ($success) {
         <?php endwhile; ?>
     </table>
 </div>
+<?php if ($subfiltersPages > 1): ?>
+<div class="card">
+    <?php if ($sfPage > 1): ?><a href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . $fPage . '&sfpage=' . ($sfPage - 1) . '&rpage=' . $rPage), ENT_QUOTES, 'UTF-8') ?>">← Subfilter назад</a><?php endif; ?>
+    <?php if ($sfPage < $subfiltersPages): ?><a style="margin-left:10px;" href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . $fPage . '&sfpage=' . ($sfPage + 1) . '&rpage=' . $rPage), ENT_QUOTES, 'UTF-8') ?>">Subfilter вперед →</a><?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="card">
     <h2>Связи</h2>
+    <p class="muted">Всего: <?= (int)$relationsTotal ?> · Страница <?= (int)$rPage ?> из <?= (int)$relationsPages ?></p>
     <table>
         <tr><th>ID</th><th>Filter</th><th>Subfilter</th><th>Удалить</th></tr>
         <?php while ($r = $relations->fetch_assoc()): ?>
@@ -222,6 +268,12 @@ if ($success) {
         <?php endwhile; ?>
     </table>
 </div>
+<?php if ($relationsPages > 1): ?>
+<div class="card">
+    <?php if ($rPage > 1): ?><a href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . $fPage . '&sfpage=' . $sfPage . '&rpage=' . ($rPage - 1)), ENT_QUOTES, 'UTF-8') ?>">← Связи назад</a><?php endif; ?>
+    <?php if ($rPage < $relationsPages): ?><a style="margin-left:10px;" href="<?= htmlspecialchars(admin_url('filters.php?fpage=' . $fPage . '&sfpage=' . $sfPage . '&rpage=' . ($rPage + 1)), ENT_QUOTES, 'UTF-8') ?>">Связи вперед →</a><?php endif; ?>
+</div>
+<?php endif; ?>
 <script>
 function slugifyRuToEn(text) {
     if (!text) return '';

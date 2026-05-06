@@ -68,7 +68,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
       if (data && data.success){
         msg.textContent = data.message || 'OK';
         msg.classList.add('is-success');
-        setTimeout(function(){ window.location.href = '<?= htmlspecialchars(app_url('account.php'), ENT_QUOTES, 'UTF-8') ?>'; }, 300);
+        var nextUrl = new URLSearchParams(window.location.search).get('redirect');
+        var safeNext = (nextUrl && nextUrl.charAt(0) === '/' && nextUrl.indexOf('//') !== 0)
+          ? nextUrl
+          : '<?= htmlspecialchars(app_url('account.php'), ENT_QUOTES, 'UTF-8') ?>';
+        setTimeout(function(){ window.location.href = safeNext; }, 300);
       } else {
         msg.textContent = (data && data.message) || 'Ошибка';
         msg.classList.add('is-error');

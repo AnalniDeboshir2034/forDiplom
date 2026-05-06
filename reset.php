@@ -63,6 +63,21 @@ $token = trim((string)($_GET['token'] ?? ''));
 </main>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
 <script>
+function parseApiResponse(response){
+  return response.text().then(function(text){
+    var data = null;
+    try { data = JSON.parse(text); } catch(e) {}
+    if (!data || typeof data !== 'object') {
+      data = {
+        success: false,
+        message: text ? text.replace(/<[^>]*>/g, '').trim().slice(0, 250) : 'Сервер вернул некорректный ответ'
+      };
+    }
+    data.__ok = response.ok;
+    return data;
+  });
+}
+
 var f = document.getElementById('resetForm');
 if (f){
   f.addEventListener('submit', function(e){
@@ -72,14 +87,14 @@ if (f){
     msg.className = 'auth-msg';
     var fd = new FormData(e.target);
     fetch('<?= htmlspecialchars(app_url('includes/auth_reset.php'), ENT_QUOTES, 'UTF-8') ?>', { method:'POST', body: fd })
-      .then(function(r){ return r.json(); })
+      .then(parseApiResponse)
       .then(function(data){
         if (data && data.success){
           msg.textContent = data.message || 'OK';
           msg.classList.add('is-success');
           setTimeout(function(){ window.location.href = '<?= htmlspecialchars(app_url('login.php'), ENT_QUOTES, 'UTF-8') ?>'; }, 500);
         } else {
-          msg.textContent = (data && data.message) || 'Ошибка';
+          msg.textContent = (data && data.message) || (data && data.__ok === false ? 'Ошибка сервера' : 'Ошибка');
           msg.classList.add('is-error');
         }
       })

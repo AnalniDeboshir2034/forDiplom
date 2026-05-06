@@ -6,6 +6,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     app_json(['success' => false, 'message' => 'Неверный метод'], 405);
 }
 
+app_apply_migrations($mysqli);
+
 $token = trim((string)($_POST['token'] ?? ''));
 $password = (string)($_POST['password'] ?? '');
 
@@ -25,6 +27,10 @@ $stmt = $mysqli->prepare("SELECT pr.id, pr.user_id, pr.token_hash, pr.expires_at
                           WHERE pr.used_at IS NULL
                           ORDER BY pr.id DESC
                           LIMIT 50");
+$stmtCheck = $stmt;
+if (!$stmtCheck) {
+    app_json(['success' => false, 'message' => 'Ошибка БД при чтении токена восстановления'], 500);
+}
 $stmt->execute();
 $res = $stmt->get_result();
 $match = null;
@@ -46,12 +52,20 @@ $uid = (int)$match['user_id'];
 $newHash = password_hash($password, PASSWORD_DEFAULT);
 
 $stmt = $mysqli->prepare("UPDATE `user` SET `password` = ? WHERE `id` = ? LIMIT 1");
+$stmtCheck = $stmt;
+if (!$stmtCheck) {
+    app_json(['success' => false, 'message' => 'Ошибка БД при обновлении пароля'], 500);
+}
 $stmt->bind_param('si', $newHash, $uid);
 $stmt->execute();
 $stmt->close();
 
 $resetId = (int)$match['id'];
 $stmt = $mysqli->prepare("UPDATE `password_resets` SET `used_at` = NOW() WHERE `id` = ? LIMIT 1");
+$stmtCheck = $stmt;
+if (!$stmtCheck) {
+    app_json(['success' => false, 'message' => 'Ошибка БД при закрытии токена'], 500);
+}
 $stmt->bind_param('i', $resetId);
 $stmt->execute();
 $stmt->close();

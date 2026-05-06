@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetBtn = document.getElementById('reset-filters');
     const productsGrid = document.getElementById('products-grid');
     const productsCount = document.getElementById('products-count');
+    const sortSelect = document.getElementById('catalogSort');
+    const priceMinInput = document.getElementById('catalogPriceMin');
+    const priceMaxInput = document.getElementById('catalogPriceMax');
     const filterToggleBtn = document.getElementById('catalogFilterToggle');
     const filtersPanel = document.getElementById('catalogFiltersPanel');
     const filtersCloseBtn = document.getElementById('catalogFiltersClose');
@@ -43,16 +46,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Функция фильтрации товаров
     function filterProducts() {
         const products = document.querySelectorAll('.product-card');
+        const minPrice = priceMinInput ? parseFloat(priceMinInput.value) : NaN;
+        const maxPrice = priceMaxInput ? parseFloat(priceMaxInput.value) : NaN;
         
         products.forEach(product => {
             const productCategory = String(product.dataset.category || '').trim().toLowerCase();
             const productSubcategory = String(product.dataset.subcategory || '').trim().toLowerCase();
+            const productPrice = parseFloat(product.dataset.price || '0');
             const titleEl = product.querySelector('.product-title');
             const productName = titleEl ? titleEl.textContent.trim().toLowerCase() : '';
             
             let categoryMatch = false;
             let subcategoryMatch = false;
             let searchMatch = true;
+            let priceMatch = true;
             
             // При активных подфильтрах разрешаем пересечение разных категорий.
             if (activeSubcategories.size > 0 || activeCategory === 'all') {
@@ -70,15 +77,44 @@ document.addEventListener('DOMContentLoaded', function() {
             if (searchQuery) {
                 searchMatch = productName.indexOf(searchQuery) !== -1;
             }
-            
-            if (categoryMatch && subcategoryMatch && searchMatch) {
+
+            if (!Number.isNaN(minPrice)) {
+                priceMatch = productPrice >= minPrice;
+            }
+            if (priceMatch && !Number.isNaN(maxPrice)) {
+                priceMatch = productPrice <= maxPrice;
+            }
+            if (categoryMatch && subcategoryMatch && searchMatch && priceMatch) {
                 product.classList.remove('hidden');
             } else {
                 product.classList.add('hidden');
             }
         });
-        
+        applySorting();
         updateProductsCount();
+    }
+
+    function applySorting() {
+        if (!productsGrid || !sortSelect) return;
+        var cards = Array.prototype.slice.call(productsGrid.querySelectorAll('.product-card'));
+        var mode = String(sortSelect.value || 'default');
+        if (mode === 'default') return;
+        cards.sort(function (a, b) {
+            var nameAEl = a.querySelector('.product-title');
+            var nameBEl = b.querySelector('.product-title');
+            var nameA = nameAEl ? nameAEl.textContent.trim().toLowerCase() : '';
+            var nameB = nameBEl ? nameBEl.textContent.trim().toLowerCase() : '';
+            var priceA = parseFloat(a.dataset.price || '0');
+            var priceB = parseFloat(b.dataset.price || '0');
+            if (mode === 'name_asc') return nameA.localeCompare(nameB, 'ru');
+            if (mode === 'name_desc') return nameB.localeCompare(nameA, 'ru');
+            if (mode === 'price_asc') return priceA - priceB;
+            if (mode === 'price_desc') return priceB - priceA;
+            return 0;
+        });
+        cards.forEach(function (card) {
+            productsGrid.appendChild(card);
+        });
     }
     
     // Обработчики для кнопок основных категорий
@@ -152,10 +188,23 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Очищаем активные подкатегории
             activeSubcategories.clear();
+            if (priceMinInput) priceMinInput.value = '';
+            if (priceMaxInput) priceMaxInput.value = '';
+            if (sortSelect) sortSelect.value = 'default';
             
             // Применяем фильтрацию
             filterProducts();
         });
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', filterProducts);
+    }
+    if (priceMinInput) {
+        priceMinInput.addEventListener('input', filterProducts);
+    }
+    if (priceMaxInput) {
+        priceMaxInput.addEventListener('input', filterProducts);
     }
     
     // Dropdown меню для фильтров (мобильная версия)

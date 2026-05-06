@@ -58,19 +58,50 @@ if (!$user) {
                     <form id="profileForm">
                         <div class="row">
                             <div>
+                                <label class="muted">Тип аккаунта</label>
+                                <select name="account_type" id="profileAccountType">
+                                    <option value="individual" <?= (($user['account_type'] ?? 'individual') === 'individual') ? 'selected' : '' ?>>Физическое лицо</option>
+                                    <option value="legal" <?= (($user['account_type'] ?? '') === 'legal') ? 'selected' : '' ?>>Юридическое лицо</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="muted">Имя профиля</label>
                                 <input type="text" name="name" value="<?= htmlspecialchars((string)($user['name'] ?? '')) ?>">
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top:12px;">
+                            <div>
+                                <label class="muted">Телефон</label>
+                                <input type="text" name="phone" value="<?= htmlspecialchars((string)($user['phone'] ?? '')) ?>">
                             </div>
                             <div>
                                 <label class="muted">E-mail</label>
                                 <input type="email" name="email" value="<?= htmlspecialchars((string)($user['email'] ?? '')) ?>">
                             </div>
                         </div>
-                        <div class="row" style="margin-top:12px;">
-                            <div>
-                                <label class="muted">УНП (для юр. лиц)</label>
-                                <input type="text" name="unp" value="<?= htmlspecialchars((string)($user['unp'] ?? '')) ?>">
+                        <div id="legalProfileFields" style="margin-top:12px;">
+                            <div class="row">
+                                <div>
+                                    <label class="muted">Название компании</label>
+                                    <input type="text" name="company_name" value="<?= htmlspecialchars((string)($user['company_name'] ?? '')) ?>">
+                                </div>
+                                <div>
+                                    <label class="muted">ФИО представителя</label>
+                                    <input type="text" name="representative_name" value="<?= htmlspecialchars((string)($user['representative_name'] ?? '')) ?>">
+                                </div>
                             </div>
+                            <div class="row" style="margin-top:12px;">
+                                <div>
+                                    <label class="muted">УНП (для юр. лиц)</label>
+                                    <input type="text" name="unp" value="<?= htmlspecialchars((string)($user['unp'] ?? '')) ?>">
+                                </div>
+                                <div>
+                                    <label class="muted">Адрес компании</label>
+                                    <input type="text" name="address" value="<?= htmlspecialchars((string)($user['address'] ?? '')) ?>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top:12px;">
                             <div>
                                 <label class="muted">Новый пароль</label>
                                 <input type="password" name="new_password" placeholder="Оставьте пустым, если не меняете">
@@ -106,6 +137,19 @@ document.querySelectorAll('.cab-nav a[data-tab]').forEach(function(a){
     setTab(a.getAttribute('data-tab'));
   });
 });
+
+function syncProfileLegalFields(){
+  var sel = document.getElementById('profileAccountType');
+  var wrap = document.getElementById('legalProfileFields');
+  if (!sel || !wrap) return;
+  var isLegal = sel.value === 'legal';
+  wrap.style.display = isLegal ? 'block' : 'none';
+}
+var profileAccountType = document.getElementById('profileAccountType');
+if (profileAccountType) {
+  profileAccountType.addEventListener('change', syncProfileLegalFields);
+  syncProfileLegalFields();
+}
 
 document.getElementById('profileForm').addEventListener('submit', function(e){
   e.preventDefault();

@@ -212,7 +212,7 @@ if (empty($popular_products)) {
                 <p class="section-subtitle">Подберите медикатор-дозатор под задачи вашего хозяйства</p>
                 
                 <div class="categories__grid">
-                    <a href="/catalog#cat=masterpro" class="category-card category-card--gradient-1">
+                    <a href="<?= htmlspecialchars(app_url('catalog.php#cat=masterpro'), ENT_QUOTES, 'UTF-8') ?>" class="category-card category-card--gradient-1">
                         <div class="category-card__image">
                             <img src="products/MASTERPRO.png" alt="Медикаторы Master Pro">
                         </div>
@@ -221,7 +221,7 @@ if (empty($popular_products)) {
                         <span class="category-card__link">Перейти в каталог →</span>
                     </a>
 
-                    <a href="/catalog#cat=dosatron" class="category-card category-card--gradient-2">
+                    <a href="<?= htmlspecialchars(app_url('catalog.php#cat=dosatron'), ENT_QUOTES, 'UTF-8') ?>" class="category-card category-card--gradient-2">
                         <div class="category-card__image">
                             <img src="products/Dosatron.png" alt="Медикаторы Dosatron">
                         </div>
@@ -230,7 +230,7 @@ if (empty($popular_products)) {
                         <span class="category-card__link">Перейти в каталог →</span>
                     </a>
 
-                    <a href="/catalog#cat=mixrite" class="category-card category-card--gradient-3">
+                    <a href="<?= htmlspecialchars(app_url('catalog.php#cat=mixrite'), ENT_QUOTES, 'UTF-8') ?>" class="category-card category-card--gradient-3">
                         <div class="category-card__image">
                             <img src="products/Mixrite.png" alt="Медикаторы MixRite">
                         </div>

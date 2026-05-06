@@ -378,6 +378,10 @@ if (is_array($waterTreatmentProduct) && !$isWaterTreatmentProduct) {
                         <?= htmlspecialchars($product['filter_name'] ?? 'Медикатор') ?>
                     </div>
                     <h1 class="product-title"><?= htmlspecialchars($product['name']) ?></h1>
+                    <?php $productPrice = isset($product['price']) ? (float)$product['price'] : 0; ?>
+                    <div class="product-price-box">
+                        <?= $productPrice > 0 ? (htmlspecialchars(number_format($productPrice, 2, '.', ' ')) . ' BYN') : 'Цена по запросу' ?>
+                    </div>
                                         
 
                     <div class="product-specs">

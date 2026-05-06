@@ -58,6 +58,8 @@ $waterTreatmentProduct = load_water_treatment_product();
 if (is_array($waterTreatmentProduct)) {
     $waterTreatmentProduct['filter_slug'] = 'uzel-vodopodgotovki';
     $waterTreatmentProduct['subfilter_slug'] = 'uzel-vodopodgotovki';
+    $waterTreatmentProduct['price'] = null;
+    $waterTreatmentProduct['manufacturer'] = 'Medikator.ru';
     $products[] = $waterTreatmentProduct;
 }
 
@@ -177,6 +179,16 @@ if (is_array($waterTreatmentProduct)) {
                         <?php else: ?>
                             <p>Фильтры не найдены</p>
                         <?php endif; ?>
+                        <div class="filter-group open">
+                            <button class="filter-dropdown" type="button">
+                                Цена
+                                <span class="filter-arrow">▼</span>
+                            </button>
+                            <div class="filter-submenu" style="display:block;">
+                                <input id="catalogPriceMin" type="number" min="0" step="0.01" placeholder="Цена от">
+                                <input id="catalogPriceMax" type="number" min="0" step="0.01" placeholder="Цена до" style="margin-top:8px;">
+                            </div>
+                        </div>
                         
                         <button class="filter-reset" id="reset-filters">Сбросить фильтры</button>
                     </aside>
@@ -184,14 +196,27 @@ if (is_array($waterTreatmentProduct)) {
                     <div class="catalog-products">
                         <div class="products-header">
                             <span class="products-count" id="products-count">Найдено: <?= count($products) ?> товаров</span>
+                            <div class="catalog-sort-bar">
+                                <select id="catalogSort">
+                                    <option value="default">Сортировка: по умолчанию</option>
+                                    <option value="name_asc">По названию (А-Я)</option>
+                                    <option value="name_desc">По названию (Я-А)</option>
+                                    <option value="price_asc">По цене (возр.)</option>
+                                    <option value="price_desc">По цене (убыв.)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="products-grid" id="products-grid">
                             <?php if (!empty($products)): ?>
                                 <?php foreach ($products as $product): ?>
                                 <?php $isWaterTreatment = ($product['type'] ?? '') === 'water-treatment'; ?>
+                                <?php $priceValue = isset($product['price']) ? (float)$product['price'] : 0; ?>
+                                <?php $manufacturerValue = trim((string)($product['manufacturer'] ?? '')); ?>
                                 <div class="product-card" data-category="<?= htmlspecialchars($product['filter_slug'] ?? '') ?>" 
-                                     data-subcategory="<?= htmlspecialchars($product['subfilter_slug'] ?? $product['filtr']) ?>">
+                                     data-subcategory="<?= htmlspecialchars($product['subfilter_slug'] ?? $product['filtr']) ?>"
+                                     data-price="<?= htmlspecialchars((string)$priceValue) ?>"
+                                     data-manufacturer="<?= htmlspecialchars($manufacturerValue) ?>">
                                     <div class="product-card__content">
                                         <?php if (!empty($product['main_img'])): ?>
                                         <a class="product-image" href="<?= htmlspecialchars(app_product_url((string)$product['slug']), ENT_QUOTES, 'UTF-8') ?>">
@@ -211,6 +236,9 @@ if (is_array($waterTreatmentProduct)) {
                                         ?>
                                         <p class="product-desc">
                                             <?= htmlspecialchars($isWaterTreatment ? $waterDescription : ($product['filtr'] ?? '')) ?>
+                                        </p>
+                                        <p class="product-price">
+                                            <?= $priceValue > 0 ? (htmlspecialchars(number_format($priceValue, 2, '.', ' ')) . ' BYN') : 'Цена по запросу' ?>
                                         </p>
                                         
                                         <div class="product-specs">

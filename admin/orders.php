@@ -3,8 +3,19 @@ require_once __DIR__ . '/bootstrap.php';
 admin_require_auth();
 require_once __DIR__ . '/../includes/migrations.php';
 require_once __DIR__ . '/../includes/auth_lib.php';
+require_once __DIR__ . '/../includes/mail_lib.php';
 
 $msg = '';
+function admin_order_status_label(string $status): string
+{
+    $map = [
+        'new' => 'Новый',
+        'paid' => 'Оплачен',
+        'shipped' => 'Отправлен',
+        'completed' => 'Завершен',
+    ];
+    return $map[$status] ?? $status;
+}
 
 if (isset($_POST['set_status'])) {
     $orderId = (int)($_POST['order_id'] ?? 0);
@@ -16,6 +27,21 @@ if (isset($_POST['set_status'])) {
         $stmt->execute();
         $stmt->close();
         $msg = 'Статус обновлён';
+
+        $stmt = $mysqli->prepare("SELECT customer_email FROM orders WHERE id = ? LIMIT 1");
+        $stmt->bind_param('i', $orderId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+        $to = app_normalize_email((string)($row['customer_email'] ?? ''));
+        if ($to !== '' && app_is_email($to)) {
+            $subject = 'Статус заказа #' . $orderId . ' обновлен';
+            $body = "Здравствуйте!\n\nСтатус вашего заказа #{$orderId}: " . admin_order_status_label($status) . ".\n\nСпасибо за покупку!";
+            $mailError = null;
+            $sent = app_send_mail($to, $subject, $body, $mailError);
+            app_log_email_attempt($mysqli, $to, $subject, $body, $sent, $mailError);
+        }
     }
 }
 
@@ -25,19 +51,10 @@ if (isset($_POST['send_email'])) {
     $subject = trim((string)($_POST['subject'] ?? ''));
     $body = trim((string)($_POST['body'] ?? ''));
     if ($orderId > 0 && $to !== '' && app_is_email($to) && $subject !== '' && $body !== '') {
-        $headers = "From: no-reply@" . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\r\n";
-        $sent = @mail($to, $subject, $body, $headers);
-        if (db_table_exists($mysqli, 'email_log')) {
-            $status = $sent ? 'sent' : 'error';
-            $error = $sent ? null : 'mail() returned false';
-            $stmt = $mysqli->prepare("INSERT INTO email_log (to_email, subject, body, status, error) VALUES (?, ?, ?, ?, ?)");
-            if ($stmt) {
-                $stmt->bind_param('sssss', $to, $subject, $body, $status, $error);
-                $stmt->execute();
-                $stmt->close();
-            }
-        }
-        $msg = $sent ? 'Письмо отправлено' : 'Не удалось отправить письмо (mail())';
+        $mailError = null;
+        $sent = app_send_mail($to, $subject, $body, $mailError);
+        app_log_email_attempt($mysqli, $to, $subject, $body, $sent, $mailError);
+        $msg = $sent ? 'Письмо отправлено' : ('Не удалось отправить письмо: ' . ($mailError ?: 'mail() returned false'));
     }
 }
 
@@ -51,15 +68,40 @@ if ($statusFilter !== '') {
     $types .= 's';
 }
 
+$perPage = 20;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
+$countSql = "SELECT COUNT(*) AS cnt FROM orders $where";
+$countStmt = $mysqli->prepare($countSql);
+if ($types !== '') {
+    $countStmt->bind_param($types, ...$params);
+}
+$countStmt->execute();
+$countRes = $countStmt->get_result();
+$totalRows = (int)(($countRes ? $countRes->fetch_assoc()['cnt'] : 0) ?? 0);
+$countStmt->close();
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
+
 $sql = "SELECT id, status, total, customer_name, customer_phone, customer_email, delivery_type, payment_type, created_at
         FROM orders
         $where
         ORDER BY id DESC
-        LIMIT 200";
+        LIMIT ? OFFSET ?";
 
 $stmt = $mysqli->prepare($sql);
 if ($types !== '') {
-    $stmt->bind_param($types, ...$params);
+    $typesWithPage = $types . 'ii';
+    $paramsWithPage = $params;
+    $paramsWithPage[] = $perPage;
+    $paramsWithPage[] = $offset;
+    $stmt->bind_param($typesWithPage, ...$paramsWithPage);
+} else {
+    $stmt->bind_param('ii', $perPage, $offset);
 }
 $stmt->execute();
 $res = $stmt->get_result();
@@ -96,12 +138,13 @@ admin_page_start('Заказы');
 <div class="card">
     <h2>Список заказов</h2>
     <p class="muted">Фильтр по статусу:
-        <a href="/admin/orders">все</a> ·
-        <a href="/admin/orders?status=new">new</a> ·
-        <a href="/admin/orders?status=paid">paid</a> ·
-        <a href="/admin/orders?status=shipped">shipped</a> ·
-        <a href="/admin/orders?status=completed">completed</a>
+        <a href="<?= htmlspecialchars(admin_url('orders.php'), ENT_QUOTES, 'UTF-8') ?>">все</a> ·
+        <a href="<?= htmlspecialchars(admin_url('orders.php?status=new'), ENT_QUOTES, 'UTF-8') ?>">Новый</a> ·
+        <a href="<?= htmlspecialchars(admin_url('orders.php?status=paid'), ENT_QUOTES, 'UTF-8') ?>">Оплачен</a> ·
+        <a href="<?= htmlspecialchars(admin_url('orders.php?status=shipped'), ENT_QUOTES, 'UTF-8') ?>">Отправлен</a> ·
+        <a href="<?= htmlspecialchars(admin_url('orders.php?status=completed'), ENT_QUOTES, 'UTF-8') ?>">Завершен</a>
     </p>
+    <p class="muted">Всего: <?= (int)$totalRows ?> · Страница <?= (int)$page ?> из <?= (int)$totalPages ?></p>
     <table>
         <thead>
         <tr>
@@ -118,7 +161,7 @@ admin_page_start('Заказы');
         <?php foreach ($orders as $o): ?>
             <tr>
                 <td>#<?= (int)$o['id'] ?></td>
-                <td><?= htmlspecialchars((string)$o['status']) ?></td>
+                <td><?= htmlspecialchars(admin_order_status_label((string)$o['status'])) ?></td>
                 <td><?= htmlspecialchars((string)$o['total']) ?></td>
                 <td>
                     <?= htmlspecialchars((string)($o['customer_name'] ?? '')) ?><br>
@@ -130,12 +173,34 @@ admin_page_start('Заказы');
                     <span class="muted"><?= htmlspecialchars((string)($o['payment_type'] ?? '')) ?></span>
                 </td>
                 <td class="muted"><?= htmlspecialchars((string)($o['created_at'] ?? '')) ?></td>
-                <td><a href="/admin/orders?id=<?= (int)$o['id'] ?>">Открыть</a></td>
+                <td><a href="<?= htmlspecialchars(admin_url('orders.php?id=' . (int)$o['id']), ENT_QUOTES, 'UTF-8') ?>">Открыть</a></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
 </div>
+
+<?php if ($totalPages > 1): ?>
+<div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <?php
+        $buildOrdersPageUrl = function (int $targetPage) use ($statusFilter): string {
+            $qs = ['page' => $targetPage];
+            if ($statusFilter !== '') {
+                $qs['status'] = $statusFilter;
+            }
+            return admin_url('orders.php?' . http_build_query($qs));
+        };
+        ?>
+        <?php if ($page > 1): ?>
+            <a href="<?= htmlspecialchars($buildOrdersPageUrl($page - 1), ENT_QUOTES, 'UTF-8') ?>">← Назад</a>
+        <?php endif; ?>
+        <?php if ($page < $totalPages): ?>
+            <a href="<?= htmlspecialchars($buildOrdersPageUrl($page + 1), ENT_QUOTES, 'UTF-8') ?>">Вперед →</a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($openOrder): ?>
 <div class="card">
@@ -165,7 +230,7 @@ admin_page_start('Заказы');
         <input type="hidden" name="order_id" value="<?= (int)$openOrder['id'] ?>">
         <select name="status" required style="max-width:280px;">
             <?php foreach (['new','paid','shipped','completed'] as $st): ?>
-                <option value="<?= $st ?>" <?= ((string)$openOrder['status'] === $st) ? 'selected' : '' ?>><?= $st ?></option>
+                <option value="<?= $st ?>" <?= ((string)$openOrder['status'] === $st) ? 'selected' : '' ?>><?= htmlspecialchars(admin_order_status_label($st)) ?></option>
             <?php endforeach; ?>
         </select>
         <button type="submit" name="set_status" value="1">Сохранить</button>
@@ -177,11 +242,11 @@ admin_page_start('Заказы');
         <label>Кому</label>
         <input type="email" name="to_email" value="<?= htmlspecialchars((string)($openOrder['customer_email'] ?? '')) ?>" required>
         <label>Тема</label>
-        <input type="text" name="subject" value="Статус заказа #<?= (int)$openOrder['id'] ?> на Medikator.ru" required>
+        <input type="text" name="subject" value="Статус заказа #<?= (int)$openOrder['id'] ?> на <?= htmlspecialchars(app_site_host(), ENT_QUOTES, 'UTF-8') ?>" required>
         <label>Сообщение</label>
         <textarea name="body" rows="6" required>Здравствуйте!
 
-Статус вашего заказа #<?= (int)$openOrder['id'] ?>: <?= htmlspecialchars((string)($openOrder['status'] ?? '')) ?>.
+Статус вашего заказа #<?= (int)$openOrder['id'] ?>: <?= htmlspecialchars(admin_order_status_label((string)($openOrder['status'] ?? ''))) ?>.
 </textarea>
         <button type="submit" name="send_email" value="1">Отправить письмо</button>
     </form>

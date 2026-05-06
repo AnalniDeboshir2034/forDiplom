@@ -507,12 +507,26 @@ if ($subfilters) {
     $subfilters->free();
 }
 
-$medicators = $mysqli->query("SELECT * FROM medicator ORDER BY id DESC");
+$perPage = 10;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+$countRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM medicator");
+$totalRows = (int)(($countRes ? $countRes->fetch_assoc()['cnt'] : 0) ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+if ($page > $totalPages) {
+    $page = $totalPages;
+    $offset = ($page - 1) * $perPage;
+}
+$stmtMedicators = $mysqli->prepare("SELECT * FROM medicator ORDER BY id DESC LIMIT ? OFFSET ?");
+$stmtMedicators->bind_param('ii', $perPage, $offset);
+$stmtMedicators->execute();
+$medicators = $stmtMedicators->get_result();
 admin_page_start('Админка: Медикаторы + Галерея');
 ?>
 
 <div class="card">
     <h2>Поиск по медикаторам</h2>
+    <p class="muted">Всего: <?= (int)$totalRows ?> · Страница <?= (int)$page ?> из <?= (int)$totalPages ?></p>
     <p class="muted">Введи ID или часть названия, чтобы быстро найти нужную карточку.</p>
     <div class="grid">
         <div>
@@ -751,6 +765,19 @@ admin_page_start('Админка: Медикаторы + Галерея');
             </details>
         </div>
     <?php endwhile; ?>
+<?php endif; ?>
+
+<?php if ($totalPages > 1): ?>
+    <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <?php if ($page > 1): ?>
+                <a href="<?= htmlspecialchars(admin_url('medicators.php?page=' . ($page - 1)), ENT_QUOTES, 'UTF-8') ?>">← Назад</a>
+            <?php endif; ?>
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= htmlspecialchars(admin_url('medicators.php?page=' . ($page + 1)), ENT_QUOTES, 'UTF-8') ?>">Вперед →</a>
+            <?php endif; ?>
+        </div>
+    </div>
 <?php endif; ?>
 
 <script>
