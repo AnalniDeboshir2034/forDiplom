@@ -1,0 +1,12 @@
+[06-May-2026 19:49:17 Europe/Minsk] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php:19
+Stack trace:
+#0 {main}
+  thrown in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php on line 19
+[06-May-2026 19:57:10 Europe/Minsk] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php:19
+Stack trace:
+#0 {main}
+  thrown in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php on line 19
+[06-May-2026 20:20:56 Europe/Minsk] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php:19
+Stack trace:
+#0 {main}
+  thrown in /var/www/h208468/data/www/diplomkbip.xyz/includes/api_orders_list.php on line 19

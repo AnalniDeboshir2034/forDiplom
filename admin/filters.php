@@ -179,7 +179,7 @@ if ($success) {
     <h2>Filter</h2>
     <p class="muted">Всего: <?= (int)$filtersTotal ?> · Страница <?= (int)$fPage ?> из <?= (int)$filtersPages ?></p>
     <table>
-        <tr><th>ID</th><th>Name</th><th>Slug</th><th>Opis</th><th>Обновить</th><th>Удалить</th></tr>
+        <tr><th>Номер</th><th>Название</th><th>Слаг</th><th>Описание</th><th>Обновить</th><th>Удалить</th></tr>
         <?php while ($f = $filters->fetch_assoc()): ?>
             <tr>
                 <td><?= (int)$f['id'] ?></td>
@@ -215,7 +215,7 @@ if ($success) {
     <h2>Subfilter</h2>
     <p class="muted">Всего: <?= (int)$subfiltersTotal ?> · Страница <?= (int)$sfPage ?> из <?= (int)$subfiltersPages ?></p>
     <table>
-        <tr><th>ID</th><th>Name</th><th>Slug</th><th>Opis</th><th>Обновить</th><th>Удалить</th></tr>
+        <tr><th>Номер</th><th>Название</th><th>Слаг</th><th>Описание</th><th>Обновить</th><th>Удалить</th></tr>
         <?php while ($sf = $subfilters->fetch_assoc()): ?>
             <tr>
                 <td><?= (int)$sf['id'] ?></td>
@@ -251,7 +251,7 @@ if ($success) {
     <h2>Связи</h2>
     <p class="muted">Всего: <?= (int)$relationsTotal ?> · Страница <?= (int)$rPage ?> из <?= (int)$relationsPages ?></p>
     <table>
-        <tr><th>ID</th><th>Filter</th><th>Subfilter</th><th>Удалить</th></tr>
+        <tr><th>Номер</th><th>Фильтр</th><th>Субфильтр</th><th>Удалить</th></tr>
         <?php while ($r = $relations->fetch_assoc()): ?>
             <tr>
                 <td><?= (int)$r['id'] ?></td>

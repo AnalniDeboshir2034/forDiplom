@@ -137,6 +137,28 @@ try {
     $medicatorHasSlug = false;
 }
 
+function admin_validate_medicator_payload(array $data): ?string
+{
+    $required = [
+        'name' => 'название медикатора',
+        'filtr' => 'категория',
+        'd_dosing' => 'диапазон дозирования',
+        'performance' => 'производительность',
+        'pressure' => 'давление',
+        'temperature' => 'температура',
+        'connections' => 'подключения',
+        'm_seal' => 'материал уплотнений',
+        'm_case' => 'материал корпуса',
+        'opis' => 'описание',
+    ];
+    foreach ($required as $field => $label) {
+        if (trim((string)($data[$field] ?? '')) === '') {
+            return 'Заполните поле: ' . $label;
+        }
+    }
+    return null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -144,6 +166,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $name = admin_req('name');
             $filtr = admin_req('filtr');
+            $payload = [
+                'name' => $name,
+                'filtr' => $filtr,
+                'd_dosing' => admin_req('d_dosing'),
+                'performance' => admin_req('performance'),
+                'pressure' => admin_req('pressure'),
+                'temperature' => admin_req('temperature'),
+                'connections' => admin_req('connections'),
+                'm_seal' => admin_req('m_seal'),
+                'm_case' => admin_req('m_case'),
+                'opis' => admin_req('opis'),
+            ];
+            $validationError = admin_validate_medicator_payload($payload);
+            if ($validationError !== null) {
+                throw new RuntimeException($validationError);
+            }
             $slug = '';
             if ($medicatorHasSlug) {
                 $slugInput = admin_req('slug');
@@ -219,6 +257,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $name = admin_req('name');
                 $filtr = admin_req('filtr');
+                $payload = [
+                    'name' => $name,
+                    'filtr' => $filtr,
+                    'd_dosing' => admin_req('d_dosing'),
+                    'performance' => admin_req('performance'),
+                    'pressure' => admin_req('pressure'),
+                    'temperature' => admin_req('temperature'),
+                    'connections' => admin_req('connections'),
+                    'm_seal' => admin_req('m_seal'),
+                    'm_case' => admin_req('m_case'),
+                    'opis' => admin_req('opis'),
+                ];
+                $validationError = admin_validate_medicator_payload($payload);
+                if ($validationError !== null) {
+                    throw new RuntimeException($validationError);
+                }
                 $slug = '';
                 if ($medicatorHasSlug) {
                     $slugInput = admin_req('slug');
@@ -527,16 +581,16 @@ admin_page_start('Админка: Медикаторы + Галерея');
 <div class="card">
     <h2>Поиск по медикаторам</h2>
     <p class="muted">Всего: <?= (int)$totalRows ?> · Страница <?= (int)$page ?> из <?= (int)$totalPages ?></p>
-    <p class="muted">Введи ID или часть названия, чтобы быстро найти нужную карточку.</p>
+    <p class="muted">Введи идентификационный номер или часть названия, чтобы быстро найти нужную карточку.</p>
     <div class="grid">
         <div>
-            <label>Поиск</label>
-            <input id="medicatorSearch" placeholder="Например: 25 или master pro">
+            <label>Поиск по названию</label>
+            <input id="medicatorSearch" placeholder="Например: дозатрон или master pro">
         </div>
         <div>
-            <label>Быстрый переход по ID</label>
+            <label>Быстрый переход по идентификационному номеру</label>
             <div style="display:flex;gap:8px;">
-                <input id="medicatorJumpId" placeholder="ID карточки">
+                <input id="medicatorJumpId" placeholder="Например: 12" inputmode="numeric">
                 <button type="button" id="medicatorJumpBtn">Перейти</button>
             </div>
         </div>
@@ -581,18 +635,18 @@ admin_page_start('Админка: Медикаторы + Галерея');
             <?php endforeach; ?>
         </datalist>
 
-        <div class="advanced-field"><label>Диапазон дозирования</label><input name="d_dosing" placeholder="d_dosing"></div>
-        <div class="advanced-field"><label>Производительность</label><input name="performance" placeholder="performance"></div>
-        <div class="advanced-field"><label>Давление</label><input name="pressure" placeholder="pressure"></div>
-        <div class="advanced-field"><label>Температура</label><input name="temperature" placeholder="temperature"></div>
-        <div class="advanced-field"><label>Подключения</label><input name="connections" placeholder="connections"></div>
-        <div class="advanced-field"><label>Материал уплотнений</label><input name="m_seal" placeholder="m_seal"></div>
-        <div class="advanced-field"><label>Материал корпуса</label><input name="m_case" placeholder="m_case"></div>
-        <div class="advanced-field"><label>Дополнительно</label><input name="dop" placeholder="dop"></div>
-        <div class="advanced-field"><label>Passport URL</label><input name="passport" placeholder="ссылка на PDF"></div>
-        <div class="advanced-field"><label>User Pass URL</label><input name="user_pass" placeholder="ссылка на PDF"></div>
-        <div class="advanced-field"><label>Загрузить Passport PDF</label><input type="file" name="passport_file" accept=".pdf,application/pdf"></div>
-        <div class="advanced-field"><label>Загрузить User Pass PDF</label><input type="file" name="user_pass_file" accept=".pdf,application/pdf"></div>
+        <div><label>Диапазон дозирования</label><input name="d_dosing" placeholder="Например: 0.1–2%" required></div>
+        <div><label>Производительность</label><input name="performance" placeholder="Например: 1000 л/ч" required></div>
+        <div><label>Давление</label><input name="pressure" placeholder="Например: 6 бар" required></div>
+        <div><label>Температура</label><input name="temperature" placeholder="Например: до 40 °C" required></div>
+        <div><label>Подключения</label><input name="connections" placeholder="Например: 3/4&quot;" required></div>
+        <div><label>Материал уплотнений</label><input name="m_seal" placeholder="Например: EPDM" required></div>
+        <div><label>Материал корпуса</label><input name="m_case" placeholder="Например: PVC" required></div>
+        <div class="advanced-field optional-field"><label>Дополнительно</label><input name="dop" placeholder="Необязательно"></div>
+        <div class="advanced-field optional-field"><label>Passport URL</label><input name="passport" placeholder="ссылка на PDF"></div>
+        <div class="advanced-field optional-field"><label>User Pass URL</label><input name="user_pass" placeholder="ссылка на PDF"></div>
+        <div class="advanced-field optional-field"><label>Загрузить Passport PDF</label><input type="file" name="passport_file" accept=".pdf,application/pdf"></div>
+        <div class="advanced-field optional-field"><label>Загрузить User Pass PDF</label><input type="file" name="user_pass_file" accept=".pdf,application/pdf"></div>
 
         <div style="grid-column:1/-1;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
@@ -605,7 +659,7 @@ admin_page_start('Админка: Медикаторы + Галерея');
                     <button type="button" class="bb-btn" data-open="[li]" data-close="[/li]">LI</button>
                     <button type="button" class="bb-btn" data-open="[p]" data-close="[/p]">P</button>
             </div>
-            <textarea name="opis" class="opis-textarea" rows="6" placeholder="opis (поддерживает BBCode: [b],[i],[u],[h2],[h3],[ul],[li])"></textarea>
+            <textarea name="opis" class="opis-textarea" rows="6" placeholder="Описание (BBCode: [b],[i],[u],[h2],[h3],[ul],[li])" required></textarea>
         </div>
 
         <div style="grid-column:1/-1;">
@@ -618,7 +672,7 @@ admin_page_start('Админка: Медикаторы + Галерея');
     <?php while ($m = $medicators->fetch_assoc()): ?>
         <?php $images = $mysqli->query("SELECT * FROM medicator_img WHERE medicator_id=" . (int)$m['id'] . " ORDER BY sort ASC, id ASC"); ?>
 
-        <div class="card medicator-item" data-mid="<?= (int)$m['id'] ?>" data-mname="<?= htmlspecialchars(strtolower($m['name'] ?? '')) ?>">
+        <div class="card medicator-item" data-mid="<?= (int)$m['id'] ?>" data-mname="<?= htmlspecialchars(mb_strtolower($m['name'] ?? '', 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>">
             <details>
                 <summary style="cursor:pointer;font-weight:700;">
                     #<?= (int)$m['id'] ?> — <?= htmlspecialchars($m['name']) ?>
@@ -652,30 +706,30 @@ admin_page_start('Админка: Медикаторы + Галерея');
                         <input name="filtr" list="subfilter_list" value="<?= htmlspecialchars($m['filtr'] ?? '') ?>" placeholder="filtr (subfilter slug)" required>
                     </div>
 
-                    <div class="advanced-field"><label>Диапазон дозирования</label><input name="d_dosing" value="<?= htmlspecialchars($m['d_dosing'] ?? '') ?>" placeholder="d_dosing"></div>
-                    <div class="advanced-field"><label>Производительность</label><input name="performance" value="<?= htmlspecialchars($m['performance'] ?? '') ?>" placeholder="performance"></div>
-                    <div class="advanced-field"><label>Давление</label><input name="pressure" value="<?= htmlspecialchars($m['pressure'] ?? '') ?>" placeholder="pressure"></div>
-                    <div class="advanced-field"><label>Температура</label><input name="temperature" value="<?= htmlspecialchars($m['temperature'] ?? '') ?>" placeholder="temperature"></div>
-                    <div class="advanced-field"><label>Подключения</label><input name="connections" value="<?= htmlspecialchars($m['connections'] ?? '') ?>" placeholder="connections"></div>
-                    <div class="advanced-field"><label>Материал уплотнений</label><input name="m_seal" value="<?= htmlspecialchars($m['m_seal'] ?? '') ?>" placeholder="m_seal"></div>
-                    <div class="advanced-field"><label>Материал корпуса</label><input name="m_case" value="<?= htmlspecialchars($m['m_case'] ?? '') ?>" placeholder="m_case"></div>
-                    <div class="advanced-field"><label>Дополнительно</label><input name="dop" value="<?= htmlspecialchars($m['dop'] ?? '') ?>" placeholder="dop"></div>
-                    <div class="advanced-field">
+                    <div><label>Диапазон дозирования</label><input name="d_dosing" value="<?= htmlspecialchars($m['d_dosing'] ?? '') ?>" required></div>
+                    <div><label>Производительность</label><input name="performance" value="<?= htmlspecialchars($m['performance'] ?? '') ?>" required></div>
+                    <div><label>Давление</label><input name="pressure" value="<?= htmlspecialchars($m['pressure'] ?? '') ?>" required></div>
+                    <div><label>Температура</label><input name="temperature" value="<?= htmlspecialchars($m['temperature'] ?? '') ?>" required></div>
+                    <div><label>Подключения</label><input name="connections" value="<?= htmlspecialchars($m['connections'] ?? '') ?>" required></div>
+                    <div><label>Материал уплотнений</label><input name="m_seal" value="<?= htmlspecialchars($m['m_seal'] ?? '') ?>" required></div>
+                    <div><label>Материал корпуса</label><input name="m_case" value="<?= htmlspecialchars($m['m_case'] ?? '') ?>" required></div>
+                    <div class="advanced-field optional-field"><label>Дополнительно</label><input name="dop" value="<?= htmlspecialchars($m['dop'] ?? '') ?>" placeholder="Необязательно"></div>
+                    <div class="advanced-field optional-field">
                         <label>Passport URL</label>
                         <input name="passport" value="<?= htmlspecialchars($m['passport'] ?? '') ?>" placeholder="passport">
                         <?php if (!empty($m['passport'])): ?>
                             <div><a href="<?= htmlspecialchars((substr($m['passport'],0,1)==='/'?$m['passport']:'/'.$m['passport'])) ?>" target="_blank">Открыть текущий Passport</a></div>
                         <?php endif; ?>
                     </div>
-                    <div class="advanced-field">
+                    <div class="advanced-field optional-field">
                         <label>User Pass URL</label>
                         <input name="user_pass" value="<?= htmlspecialchars($m['user_pass'] ?? '') ?>" placeholder="user_pass">
                         <?php if (!empty($m['user_pass'])): ?>
                             <div><a href="<?= htmlspecialchars((substr($m['user_pass'],0,1)==='/'?$m['user_pass']:'/'.$m['user_pass'])) ?>" target="_blank">Открыть текущий User Pass</a></div>
                         <?php endif; ?>
                     </div>
-                    <div class="advanced-field"><label>Загрузить Passport PDF</label><input type="file" name="passport_file" accept=".pdf,application/pdf"></div>
-                    <div class="advanced-field"><label>Загрузить User Pass PDF</label><input type="file" name="user_pass_file" accept=".pdf,application/pdf"></div>
+                    <div class="advanced-field optional-field"><label>Загрузить Passport PDF</label><input type="file" name="passport_file" accept=".pdf,application/pdf"></div>
+                    <div class="advanced-field optional-field"><label>Загрузить User Pass PDF</label><input type="file" name="user_pass_file" accept=".pdf,application/pdf"></div>
 
                     <div style="grid-column:1/-1;">
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
@@ -692,7 +746,8 @@ admin_page_start('Админка: Медикаторы + Галерея');
                             name="opis"
                             class="opis-textarea"
                             rows="6"
-                            placeholder="opis"
+                            placeholder="Описание"
+                            required
                         ><?= htmlspecialchars($m['opis'] ?? '') ?></textarea>
                     </div>
 
@@ -725,7 +780,7 @@ admin_page_start('Админка: Медикаторы + Галерея');
 
                 <h3>Существующие картинки</h3>
                 <table>
-                    <tr><th>ID</th><th>Картинка</th><th>Правка</th><th>Удалить</th></tr>
+                    <tr><th>Номер</th><th>Картинка</th><th>Правка</th><th>Удалить</th></tr>
                     <?php if ($images && $images->num_rows > 0): ?>
                         <?php while ($img = $images->fetch_assoc()): ?>
                             <tr>
@@ -745,7 +800,7 @@ admin_page_start('Админка: Медикаторы + Галерея');
                                         <input type="checkbox" name="is_main" value="1" <?= (int)$img['is_Main'] === 1 ? 'checked' : '' ?>>
                                         <input name="sort" type="number" value="<?= (int)$img['sort'] ?>" style="width:120px;">
                                         <input name="path_img" value="<?= htmlspecialchars($img['path_img'] ?? '') ?>">
-                                        <button type="submit">OK</button>
+                                        <button type="submit">Сохранить</button>
                                     </form>
                                 </td>
                                 <td>
@@ -843,15 +898,21 @@ document.querySelectorAll('form').forEach(function (form) {
     });
 });
 
-// Simple search by id or name.
+function normalizeMedicatorSearch(value) {
+    return String(value || '').toLocaleLowerCase('ru-RU').trim();
+}
+
 var searchInput = document.getElementById('medicatorSearch');
 if (searchInput) {
     searchInput.addEventListener('input', function () {
-        var q = String(searchInput.value || '').toLowerCase().trim();
+        var q = normalizeMedicatorSearch(searchInput.value);
         document.querySelectorAll('.medicator-item').forEach(function (item) {
-            var id = String(item.getAttribute('data-mid') || '').toLowerCase();
-            var name = String(item.getAttribute('data-mname') || '').toLowerCase();
-            var ok = !q || id.indexOf(q) !== -1 || name.indexOf(q) !== -1;
+            var id = String(item.getAttribute('data-mid') || '');
+            var name = normalizeMedicatorSearch(item.getAttribute('data-mname') || '');
+            var summary = item.querySelector('summary');
+            var summaryText = summary ? normalizeMedicatorSearch(summary.textContent) : '';
+            var haystack = name + ' ' + summaryText + ' ' + id;
+            var ok = !q || haystack.indexOf(q) !== -1;
             item.style.display = ok ? '' : 'none';
         });
     });
@@ -877,7 +938,10 @@ if (jumpInput && jumpBtn) {
         var id = String((jumpInput.value || '')).trim();
         if (!id) return;
         var card = document.querySelector('.medicator-item[data-mid="' + id + '"]');
-        if (!card) return;
+        if (!card) {
+            alert('Карточка с номером ' + id + ' не найдена на этой странице');
+            return;
+        }
         var details = card.querySelector('details');
         if (details) details.open = true;
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -891,7 +955,7 @@ var simpleModeEnabled = false;
 if (simpleModeBtn) {
     simpleModeBtn.addEventListener('click', function () {
         simpleModeEnabled = !simpleModeEnabled;
-        document.querySelectorAll('.advanced-field').forEach(function (el) {
+        document.querySelectorAll('.advanced-field.optional-field').forEach(function (el) {
             el.style.display = simpleModeEnabled ? 'none' : '';
         });
         simpleModeBtn.textContent = simpleModeEnabled ? 'Простой режим: вкл' : 'Простой режим: выкл';

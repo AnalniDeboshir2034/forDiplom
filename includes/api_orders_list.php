@@ -21,7 +21,7 @@ $stmt->execute();
 $res = $stmt->get_result();
 $orders = [];
 while ($res && ($row = $res->fetch_assoc())) {
-    $orders[] = $row;
+    $orders[] = app_localize_order_row($row);
 }
 $stmt->close();
 

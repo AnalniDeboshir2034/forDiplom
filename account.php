@@ -72,7 +72,7 @@ if (!$user) {
                         <div class="row" style="margin-top:12px;">
                             <div>
                                 <label class="muted">Телефон</label>
-                                <input type="text" name="phone" value="<?= htmlspecialchars((string)($user['phone'] ?? '')) ?>">
+                                <input type="tel" name="phone" value="<?= htmlspecialchars((string)($user['phone'] ?? '')) ?>">
                             </div>
                             <div>
                                 <label class="muted">E-mail</label>
@@ -92,8 +92,8 @@ if (!$user) {
                             </div>
                             <div class="row" style="margin-top:12px;">
                                 <div>
-                                    <label class="muted">УНП (для юр. лиц)</label>
-                                    <input type="text" name="unp" value="<?= htmlspecialchars((string)($user['unp'] ?? '')) ?>">
+                                    <label class="muted">УНП (9 цифр)</label>
+                                    <input type="text" name="unp" value="<?= htmlspecialchars((string)($user['unp'] ?? '')) ?>" inputmode="numeric" maxlength="9" pattern="\d{9}" title="УНП — 9 цифр">
                                 </div>
                                 <div>
                                     <label class="muted">Адрес компании</label>
@@ -122,9 +122,23 @@ if (!$user) {
     </div>
 </main>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
-
+<script src="<?= htmlspecialchars(app_url('js/legal-fields.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
 <script>
+function profileDigitsOnly(value){ return String(value || '').replace(/\D/g, ''); }
+function formatDateTimeRb(value){
+  var raw = String(value || '').trim();
+  if (!raw) return '';
+  var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!m) return raw;
+  return m[3] + '.' + m[2] + '.' + m[1] + (m[4] && m[5] ? (' ' + m[4] + ':' + m[5]) : '');
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+var orderStatusLabels = {new:'Новый', paid:'Оплачен', shipped:'Отправлен', completed:'Завершён'};
+function orderStatusLabel(o){
+  if (o && o.status_label) return o.status_label;
+  var key = o && o.status ? String(o.status) : '';
+  return orderStatusLabels[key] || key || '—';
+}
 function setTab(name){
   document.querySelectorAll('.cab-nav a[data-tab]').forEach(function(a){a.classList.toggle('active', a.getAttribute('data-tab')===name);});
   document.getElementById('tab-profile').style.display = name==='profile' ? 'block':'none';
@@ -154,9 +168,27 @@ if (profileAccountType) {
 document.getElementById('profileForm').addEventListener('submit', function(e){
   e.preventDefault();
   var msg = document.getElementById('profileMsg');
+  var form = e.target;
+  var isLegal = profileAccountType && profileAccountType.value === 'legal';
+  if (isLegal) {
+    var unpInput = form.querySelector('input[name="unp"]');
+    if (unpInput) {
+      unpInput.value = profileDigitsOnly(unpInput.value).slice(0, 9);
+      if (profileDigitsOnly(unpInput.value).length !== 9) {
+        msg.textContent = 'УНП должен содержать ровно 9 цифр';
+        msg.className = 'msg is-error';
+        unpInput.focus();
+        return;
+      }
+    }
+  }
   msg.textContent = 'Сохраняем...';
   msg.className = 'msg';
-  var fd = new FormData(e.target);
+  var fd = new FormData(form);
+  if (isLegal) {
+    var unp = form.querySelector('input[name="unp"]');
+    if (unp) fd.set('unp', profileDigitsOnly(unp.value));
+  }
   fetch('<?= htmlspecialchars(app_url('includes/api_profile_update.php'), ENT_QUOTES, 'UTF-8') ?>', { method:'POST', body: fd })
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -182,13 +214,13 @@ function loadOrders(){
       if (!data || !data.success){ block.textContent = (data && data.message) || 'Ошибка'; return; }
       var orders = Array.isArray(data.orders) ? data.orders : [];
       if (!orders.length){ block.textContent = 'Заказов пока нет.'; return; }
-      var html = '<table><thead><tr><th>ID</th><th>Статус</th><th>Сумма</th><th>Дата</th><th></th></tr></thead><tbody>';
+      var html = '<table><thead><tr><th>Номер</th><th>Статус</th><th>Сумма</th><th>Дата</th><th></th></tr></thead><tbody>';
       orders.forEach(function(o){
         html += '<tr>'
           + '<td>#'+esc(o.id)+'</td>'
-          + '<td>'+esc(o.status)+'</td>'
+          + '<td>'+esc(orderStatusLabel(o))+'</td>'
           + '<td>'+esc(o.total)+'</td>'
-          + '<td>'+esc(o.created_at || '')+'</td>'
+          + '<td>'+esc(o.created_at_label || formatDateTimeRb(o.created_at || ''))+'</td>'
           + '<td><button class="btn btn-secondary" type="button" data-order-open="'+esc(o.id)+'">Детали</button></td>'
           + '</tr>';
       });
@@ -214,10 +246,17 @@ document.addEventListener('click', function(e){
       var html = '<div class="card" style="padding:12px; border-radius:12px; border:1px solid #e5e7eb;">'
         + '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
         + '<strong>Заказ #'+esc(o.id)+'</strong>'
-        + '<span class="muted">Статус: '+esc(o.status)+'</span>'
+        + '<span class="muted">Статус: '+esc(orderStatusLabel(o))+'</span>'
         + '</div>'
-        + '<div class="muted" style="margin-top:6px;">Итого: '+esc(o.total)+'</div>'
-        + '<h3 style="margin:10px 0 6px;">Состав</h3>';
+        + '<div class="muted" style="margin-top:6px;">Итого: '+esc(o.total)+'</div>';
+      if (o.delivery_type_label || o.payment_type_label) {
+        html += '<div class="muted" style="margin-top:6px;">Доставка: '+esc(o.delivery_type_label || o.delivery_type || '—')
+          + (o.delivery_address ? ', '+esc(o.delivery_address) : '')
+          + (o.pickup_point ? ', '+esc(o.pickup_point) : '')
+          + '</div>'
+          + '<div class="muted" style="margin-top:4px;">Оплата: '+esc(o.payment_type_label || o.payment_type || '—')+'</div>';
+      }
+      html += '<h3 style="margin:10px 0 6px;">Состав</h3>';
       if (!items.length){
         html += '<div class="muted">Нет позиций</div>';
       } else {
@@ -244,7 +283,7 @@ document.addEventListener('click', function(e){
           + '<div class="msg" data-review-msg aria-live="polite"></div>'
           + '</form>';
       } else {
-        html += '<div class="muted" style="margin-top:10px;">Отзыв можно оставить после статуса completed.</div>';
+        html += '<div class="muted" style="margin-top:10px;">Отзыв можно оставить после статуса «Завершён».</div>';
       }
       html += '</div>';
       details.innerHTML = html;

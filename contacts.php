@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/auth_lib.php';
 require_once 'includes/site_settings.php';
 require_once __DIR__ . '/includes/seo.php';
 $siteSettings = load_site_settings();
-$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/o4k69x5rthf0grzi/crm.lead.add.json';
+$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/y91iqahj9bllr1gt/crm.lead.add.json';
 
 $form_success = false;
 $form_error = '';
@@ -11,12 +12,7 @@ $form_data = [];
 
 function is_valid_phone_prefix($phone)
 {
-    $normalized = preg_replace('/[\s\-\(\)]/', '', (string)$phone);
-    if ($normalized === '') {
-        return false;
-    }
-
-    return preg_match('/^(\+\d{6,15}|\d{6,15})$/', $normalized) === 1;
+    return app_is_valid_phone(app_normalize_phone((string)$phone));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
@@ -41,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
                 'SOURCE_DESCRIPTION' => 'Контактная форма сайта',
                 'ASSIGNED_BY_ID' => 1,
                 'STATUS_ID' => 'NEW',
-                'COMMENTS' => "Имя: $name\nТелефон: $phone\nСообщение: $message\n\nДата: " . date('d.m.Y H:i:s'),
+                'COMMENTS' => "Имя: $name\nТелефон: $phone\nСообщение: $message\n\nДата: " . date('d.m.Y H:i'),
             ]
         ];
        
@@ -200,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
                             </div>
                             <div class="form-field">
                                 <label>Телефон *</label>
-                                <input type="tel" name="phone" placeholder="(___) ___-__-__" required value="<?= htmlspecialchars($form_data['phone'] ?? '') ?>">
+                                <input type="tel" name="phone" placeholder="+375 (__) ___-__-__" required value="<?= htmlspecialchars($form_data['phone'] ?? '') ?>">
                             </div>
                         
                             <div class="form-field">

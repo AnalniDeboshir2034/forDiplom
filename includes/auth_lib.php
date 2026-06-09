@@ -42,6 +42,82 @@ function app_normalize_email(string $email): string
     return app_strtolower(trim($email));
 }
 
+function app_normalize_digits(string $value): string
+{
+    return preg_replace('/\D+/', '', $value) ?? '';
+}
+
+function app_normalize_unp(string $unp): string
+{
+    return app_normalize_digits($unp);
+}
+
+function app_is_valid_unp(string $unp): bool
+{
+    return strlen(app_normalize_unp($unp)) === 9;
+}
+
+function app_normalize_phone(string $phone): string
+{
+    $phone = trim($phone);
+    $digits = app_normalize_digits($phone);
+    if ($digits === '') {
+        return '';
+    }
+
+    if (app_starts_with($phone, '+')) {
+        return '+' . $digits;
+    }
+    if (strlen($digits) === 11 && app_starts_with($digits, '80')) {
+        return '+375' . substr($digits, 2);
+    }
+    if (app_starts_with($digits, '375')) {
+        return '+' . $digits;
+    }
+    if (strlen($digits) === 9) {
+        return '+375' . $digits;
+    }
+
+    return '+' . $digits;
+}
+
+function app_is_valid_phone(string $phone): bool
+{
+    $normalized = app_normalize_phone($phone);
+    if (!preg_match('/^\+\d{7,15}$/', $normalized)) {
+        return false;
+    }
+
+    if (!app_starts_with($normalized, '+375')) {
+        return false;
+    }
+
+    return strlen($normalized) === 13;
+}
+
+function app_validate_legal_profile_fields(
+    string $companyName,
+    string $representativeName,
+    string $unp,
+    string $phone,
+    string $address
+): ?string {
+    if ($companyName === '' || $representativeName === '' || $address === '') {
+        return 'Для юрлица заполните название компании, ФИО представителя и адрес';
+    }
+    if (!app_is_valid_unp($unp)) {
+        return 'УНП должен содержать ровно 9 цифр';
+    }
+    if ($phone === '') {
+        return 'Укажите номер телефона';
+    }
+    if (!app_is_valid_phone($phone)) {
+        return 'Введите корректный белорусский номер телефона (+375 XX XXX XX XX)';
+    }
+
+    return null;
+}
+
 function app_password_is_hash(string $stored): bool
 {
     return app_starts_with($stored, '$2y$') || app_starts_with($stored, '$2a$') || app_starts_with($stored, '$argon2');

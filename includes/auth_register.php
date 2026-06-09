@@ -25,8 +25,16 @@ if (app_strlen($password) < 8) {
     app_json(['success' => false, 'message' => 'Пароль должен быть минимум 8 символов'], 422);
 }
 if ($accountType === 'legal') {
-    if ($companyName === '' || $representativeName === '' || $unp === '' || $phone === '' || $address === '') {
-        app_json(['success' => false, 'message' => 'Для юрлица заполни компанию, представителя, УНП, телефон и адрес'], 422);
+    $unp = app_normalize_unp($unp);
+    $phone = app_normalize_phone($phone);
+    $legalError = app_validate_legal_profile_fields($companyName, $representativeName, $unp, $phone, $address);
+    if ($legalError !== null) {
+        app_json(['success' => false, 'message' => $legalError], 422);
+    }
+} elseif ($phone !== '') {
+    $phone = app_normalize_phone($phone);
+    if (!app_is_valid_phone($phone)) {
+        app_json(['success' => false, 'message' => 'Введите корректный номер телефона'], 422);
     }
 }
 

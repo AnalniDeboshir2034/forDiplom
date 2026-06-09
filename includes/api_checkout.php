@@ -34,6 +34,10 @@ if ($rawItems !== '') {
 if ($name === '' || $phone === '') {
     app_json(['success' => false, 'message' => 'Заполните имя и телефон'], 422);
 }
+$phone = app_normalize_phone($phone);
+if (!app_is_valid_phone($phone)) {
+    app_json(['success' => false, 'message' => 'Введите корректный белорусский номер (+375 XX XXX XX XX)'], 422);
+}
 if ($email !== '' && !app_is_email($email)) {
     app_json(['success' => false, 'message' => 'Некорректный e-mail'], 422);
 }

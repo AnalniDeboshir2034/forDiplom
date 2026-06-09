@@ -596,3 +596,64 @@
         height: 180px;
     }
 }
+/* =====================================
+   FILTER FIX
+===================================== */
+
+.catalog-filters input:not([type="checkbox"]):not([type="radio"]) {
+    width: 100%;
+}
+
+.filter-group {
+    overflow: hidden;
+}
+
+.filter-submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.filter-group.open .filter-submenu {
+    display: flex;
+}
+
+.filter-submenu label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #64748b;
+    cursor: pointer;
+    text-align: left;
+}
+
+.filter-submenu input[type="checkbox"] {
+    width: 18px;
+    min-width: 18px;
+    max-width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #f97316;
+}
+
+.filter-submenu span {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.catalog-filters {
+    position: sticky;
+    top: 100px;
+}
+
+@media (max-width: 768px) {
+
+    .catalog-filters {
+        position: static;
+    }
+}

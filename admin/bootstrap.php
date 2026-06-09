@@ -78,6 +78,10 @@ function admin_page_start($title)
         <title><?= htmlspecialchars($title) ?></title>
         <link rel="stylesheet" href="<?= htmlspecialchars(app_url('css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
         <link rel="stylesheet" href="<?= htmlspecialchars(app_url('admin/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+        <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js" defer></script>
+        <script src="<?= htmlspecialchars(app_url('js/phone-mask.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
     </head>
     <body class="admin-page">
     <main class="main">
@@ -89,10 +93,10 @@ function admin_page_start($title)
             </form>
         </div>
         <div class="nav">
-            <a href="<?= htmlspecialchars(admin_url('index.php'), ENT_QUOTES, 'UTF-8') ?>">Главная админки</a>
+            <a href="<?= htmlspecialchars(admin_url('index.php'), ENT_QUOTES, 'UTF-8') ?>">Главная админ.панели</a>
             <a href="<?= htmlspecialchars(admin_url('medicators.php'), ENT_QUOTES, 'UTF-8') ?>">Медикаторы</a>
             <a href="<?= htmlspecialchars(admin_url('filters.php'), ENT_QUOTES, 'UTF-8') ?>">Фильтры / Субфильтры</a>
-            <a href="<?= htmlspecialchars(admin_url('settings.php'), ENT_QUOTES, 'UTF-8') ?>">JSON настройки</a>
+            <a href="<?= htmlspecialchars(admin_url('settings.php'), ENT_QUOTES, 'UTF-8') ?>">Данные на сайте</a>
             <a href="<?= htmlspecialchars(admin_url('orders.php'), ENT_QUOTES, 'UTF-8') ?>">Заказы</a>
             <a href="<?= htmlspecialchars(admin_url('users.php'), ENT_QUOTES, 'UTF-8') ?>">Пользователи</a>
             <a href="<?= htmlspecialchars(admin_url('promo_codes.php'), ENT_QUOTES, 'UTF-8') ?>">Промокоды</a>

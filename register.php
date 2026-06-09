@@ -33,6 +33,8 @@ if ($user) {
         .auth-msg.is-error{color:#b00020}
         .auth-msg.is-success{color:#075f33}
         .auth-links{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:14px}
+        .field-hint{display:block;margin:-4px 0 8px;font-size:12px;color:#6b7280}
+        .auth-wrap select{width:100%;padding:10px 12px;margin:8px 0;border:1px solid #dbe1ea;border-radius:10px;background:#fff}
     </style>
 </head>
 <body>
@@ -50,10 +52,11 @@ if ($user) {
                 <input type="tel" name="phone" placeholder="Номер телефона">
                 <input type="email" name="email" placeholder="E-mail" required>
                 <div id="legalFields" style="display:none;">
-                    <input type="text" name="company_name" placeholder="Название компании">
-                    <input type="text" name="representative_name" placeholder="ФИО представителя">
-                    <input type="text" name="unp" placeholder="УНП">
-                    <input type="text" name="address" placeholder="Адрес компании">
+                    <input type="text" name="company_name" placeholder="Название компании" autocomplete="organization">
+                    <input type="text" name="representative_name" placeholder="ФИО представителя" autocomplete="name">
+                    <input type="text" name="unp" id="unpInput" placeholder="УНП (9 цифр)" inputmode="numeric" maxlength="9" pattern="\d{9}" title="УНП — 9 цифр">
+                    <small class="field-hint">УНП юрлица в РБ — ровно 9 цифр, без пробелов</small>
+                    <input type="text" name="address" placeholder="Юридический адрес компании" autocomplete="street-address">
                 </div>
                 <input type="password" name="password" placeholder="Пароль (мин. 8 символов)" required>
                 <button class="btn btn-primary" type="submit">Создать аккаунт</button>
@@ -67,13 +70,17 @@ if ($user) {
     </div>
 </main>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+<script src="<?= htmlspecialchars(app_url('js/legal-fields.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
 <script>
 var accountType = document.getElementById('accountType');
 var legalFields = document.getElementById('legalFields');
+function digitsOnly(value){ return String(value || '').replace(/\D/g, ''); }
 function syncLegalFields(){
   var isLegal = accountType && accountType.value === 'legal';
   legalFields.style.display = isLegal ? 'block' : 'none';
   legalFields.querySelectorAll('input').forEach(function(i){ i.required = isLegal; });
+  var phoneInput = document.querySelector('#registerForm input[name="phone"]');
+  if (phoneInput) phoneInput.required = isLegal;
 }
 if (accountType) {
   accountType.addEventListener('change', syncLegalFields);
@@ -83,9 +90,38 @@ if (accountType) {
 document.getElementById('registerForm').addEventListener('submit', function(e){
   e.preventDefault();
   var msg = document.getElementById('registerMsg');
+  var form = e.target;
+  var isLegal = accountType && accountType.value === 'legal';
+  var phoneInput = form.querySelector('input[name="phone"]');
+  var unpInput = form.querySelector('input[name="unp"]');
+
+  if (isLegal) {
+    if (unpInput) {
+      unpInput.value = digitsOnly(unpInput.value).slice(0, 9);
+      if (digitsOnly(unpInput.value).length !== 9) {
+        msg.textContent = 'УНП должен содержать ровно 9 цифр';
+        msg.className = 'auth-msg is-error';
+        unpInput.focus();
+        return;
+      }
+    }
+    if (phoneInput) {
+      phoneInput.dispatchEvent(new Event('blur', { bubbles: true }));
+      if (!phoneInput.checkValidity()) {
+        msg.textContent = phoneInput.validationMessage || 'Введите корректный номер телефона';
+        msg.className = 'auth-msg is-error';
+        phoneInput.reportValidity();
+        return;
+      }
+    }
+  }
+
   msg.textContent = 'Создаём аккаунт...';
   msg.className = 'auth-msg';
-  var fd = new FormData(e.target);
+  var fd = new FormData(form);
+  if (isLegal && unpInput) {
+    fd.set('unp', digitsOnly(unpInput.value));
+  }
   fetch('<?= htmlspecialchars(app_url('includes/auth_register.php'), ENT_QUOTES, 'UTF-8') ?>', { method:'POST', body: fd })
     .then(function(r){
       return r.text().then(function(text){

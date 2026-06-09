@@ -165,14 +165,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+
+        var phoneInput = form.querySelector('input[name="phone"]');
+        if (phoneInput && window.AppPhoneMask && typeof window.AppPhoneMask.isValid === 'function' && !window.AppPhoneMask.isValid(phoneInput)) {
+            phoneInput.setCustomValidity('Введите корректный белорусский номер (+375 XX XXX XX XX)');
+            phoneInput.reportValidity();
+            return;
+        }
+
         setStatus('Отправляем заявку...', false);
 
         var submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
 
+        var fd = new FormData(form);
+        if (phoneInput && window.AppPhoneMask && typeof window.AppPhoneMask.normalize === 'function') {
+            fd.set('phone', window.AppPhoneMask.normalize(phoneInput));
+        }
+
         fetch('includes/bitrix_form.php', {
             method: 'POST',
-            body: new FormData(form)
+            body: fd
         })
         .then(function (response) { return response.json(); })
         .then(function (data) {

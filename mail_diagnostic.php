@@ -17,7 +17,7 @@ if (strpos($disabled, 'mail') !== false) {
 }
 
 // 3. Пробуем отправить тестовое письмо через mail()
-$to = "aleksfinski@gmail.com"; // ЗАМЕНИ НА СВОЙ!
+$to = "ТВОЙ_EMAIL@mail.ru"; // ЗАМЕНИ НА СВОЙ!
 $subject = "Тест mail()";
 $message = "Это тестовое письмо, отправленное через mail()";
 $headers = "From: info@diplomkbip.xyz\r\n";

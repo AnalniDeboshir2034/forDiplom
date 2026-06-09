@@ -114,15 +114,15 @@ if (is_array($waterTreatmentProduct)) {
                         <div class="cart-totals" style="width:100%; margin-bottom:12px;">
                             <div style="display:flex; justify-content:space-between; gap:10px; margin:6px 0;">
                                 <span class="muted">Сумма</span>
-                                <strong id="cartSubtotal">0.00</strong>
+                                <strong id="cartSubtotal">0.00 BYN</strong>
                             </div>
                             <div style="display:flex; justify-content:space-between; gap:10px; margin:6px 0;">
                                 <span class="muted">Скидка</span>
-                                <strong id="cartDiscount">0.00</strong>
+                                <strong id="cartDiscount">0.00 BYN</strong>
                             </div>
                             <div style="display:flex; justify-content:space-between; gap:10px; margin:6px 0;">
                                 <span class="muted">Итого</span>
-                                <strong id="cartTotal">0.00</strong>
+                                <strong id="cartTotal">0.00 BYN</strong>
                             </div>
                         </div>
                         <button type="button" class="btn btn-primary" id="cart-checkout-open">Оформить заказ</button>
@@ -139,6 +139,14 @@ if (is_array($waterTreatmentProduct)) {
             <button type="button" class="cart-modal__close" id="cart-checkout-close" aria-label="Закрыть форму">&times;</button>
             <h3 id="cartCheckoutTitle">Оформление заказа</h3>
             <p>Заполните контакты, доставку и оплату.</p>
+
+            <div class="cart-checkout-total" id="cartCheckoutTotalBox">
+                <div class="cart-checkout-total__meta" id="cartCheckoutTotalMeta"></div>
+                <div class="cart-checkout-total__main">
+                    <span>Итого к оплате</span>
+                    <strong id="cartCheckoutTotalValue">0.00 BYN</strong>
+                </div>
+            </div>
 
             <form id="cart-checkout-form" class="cart-checkout-form">
                 <input type="text" name="name" placeholder="Ваше имя" required>

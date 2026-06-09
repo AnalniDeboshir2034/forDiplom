@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function () {
             '.iti input{width:100%!important;}' +
             '.calc-form-row .iti{flex:1;max-width:250px;}' +
             '.calc-form-row .iti input{max-width:100%!important;}' +
-            '.contact-form .iti,.contact-form-fields .iti,.header-lead-form .iti{width:100%;max-width:100%;}' +
+            '.contact-form .iti,.contact-form-fields .iti,.header-lead-form .iti,.cart-checkout-form .iti{width:100%;max-width:100%;}' +
+            '.cart-checkout-form .iti input{width:100%!important;}' +
             '@media (max-width:992px){.calc-form-row .iti{max-width:100%;width:100%;}}';
         document.head.appendChild(layoutStyle);
     }
@@ -16,99 +17,93 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!phoneInputs.length) return;
 
     var itiMap = new Map();
-    var countryData = (window.intlTelInputGlobals && typeof window.intlTelInputGlobals.getCountryData === 'function')
-        ? window.intlTelInputGlobals.getCountryData()
-        : [];
-
-    function normalizeBasicPhone(value) {
-        return String(value || '').trim().replace(/[\s()-]/g, '');
-    }
 
     function digitsOnly(value) {
         return String(value || '').replace(/\D/g, '');
     }
 
-    function getDetectedIso2ByDialPrefix(rawValue) {
-        if (!rawValue) return '';
-        var raw = String(rawValue).trim();
-        var digits = '';
-        var isInternationalInput = false;
-
-        if (raw.indexOf('+') === 0) {
-            digits = raw.slice(1).replace(/\D/g, '');
-            isInternationalInput = true;
-        } else if (raw.indexOf('00') === 0) {
-            digits = raw.slice(2).replace(/\D/g, '');
-            isInternationalInput = true;
-        } else {
-            // Local entry (e.g. 29...) should not reset user-selected country.
-            return '';
-        }
+    function extractBelarusNationalDigits(value) {
+        var digits = digitsOnly(value);
         if (!digits) return '';
-        if (!isInternationalInput || digits.length < 2) return '';
 
-        var best = '';
-        var bestLen = 0;
-        for (var i = 0; i < countryData.length; i++) {
-            var item = countryData[i];
-            var code = String(item && item.dialCode ? item.dialCode : '');
-            if (!code) continue;
-            if (digits.indexOf(code) === 0 && code.length > bestLen) {
-                best = String(item.iso2 || '');
-                bestLen = code.length;
-            }
+        while (digits.indexOf('375') === 0 && digits.length > 9) {
+            digits = digits.slice(3);
         }
-        return best;
+        while (digits.indexOf('80') === 0 && digits.length > 9) {
+            digits = digits.slice(2);
+        }
+        if (digits.length > 9) {
+            digits = digits.slice(-9);
+        }
+
+        return digits.length === 9 ? digits : '';
+    }
+
+    function buildBelarusPhone(nationalDigits) {
+        return nationalDigits.length === 9 ? ('+375' + nationalDigits) : '';
     }
 
     function getFullInternationalNumber(input) {
+        var national = extractBelarusNationalDigits(input.value);
+        var built = buildBelarusPhone(national);
+        if (built) return built;
+
         var iti = itiMap.get(input);
-        var raw = String(input.value || '').trim();
-        var normalized = normalizeBasicPhone(raw);
-        if (!normalized && !raw) return '';
-
-        // If user already typed +countryCode..., keep as is.
-        if (raw.indexOf('+') === 0 || normalized.indexOf('+') === 0) {
-            var intlDigits = digitsOnly(raw);
-            return intlDigits ? ('+' + intlDigits) : '';
+        if (iti && typeof iti.getNumber === 'function') {
+            var formatted = String(iti.getNumber() || '').replace(/\s/g, '');
+            national = extractBelarusNationalDigits(formatted);
+            built = buildBelarusPhone(national);
+            if (built) return built;
         }
 
-        var digits = digitsOnly(normalized);
-        if (!digits) return '';
-
-        // Belarus local trunk format: 80XXXXXXXXX -> +375XXXXXXXXX
-        // Example: 80291234567 -> +375291234567
-        if (digits.indexOf('80') === 0 && digits.length === 11) {
-            return '+375' + digits.slice(2);
-        }
-
-        if (iti && typeof iti.getSelectedCountryData === 'function') {
-            var country = iti.getSelectedCountryData();
-            var dial = String(country && country.dialCode ? country.dialCode : '');
-            if (dial) {
-                // If user starts with country code digits, just prepend plus.
-                if (digits.indexOf(dial) === 0) {
-                    return '+' + digits;
-                }
-                return '+' + dial + digits;
-            }
-        }
-
-        return '+' + digits;
+        return '';
     }
 
-    function isValidPhoneBasic(value) {
-        return /^\+\d{7,15}$/.test(String(value || ''));
+    function isValidBelarusPhone(value) {
+        return /^\+375\d{9}$/.test(String(value || ''));
     }
 
     function isValidPhone(input) {
         var full = getFullInternationalNumber(input);
-        return isValidPhoneBasic(full);
+        return isValidBelarusPhone(full);
+    }
+
+    function ensureBelarusCountry(input) {
+        var iti = itiMap.get(input);
+        if (iti && typeof iti.setCountry === 'function') {
+            iti.setCountry('by');
+        }
     }
 
     function setInputToInternationalValue(input) {
         var num = getFullInternationalNumber(input);
+        if (!num) return;
+        var national = num.slice(4);
+        var iti = itiMap.get(input);
+        if (iti && typeof iti.setNumber === 'function') {
+            iti.setNumber(num, 'by');
+            return;
+        }
+        input.value = national;
+    }
+
+    function setInputFullPhoneForSubmit(input) {
+        var num = getFullInternationalNumber(input);
         if (num) input.value = num;
+    }
+
+    function setPhoneValue(input, value) {
+        var iti = itiMap.get(input);
+        ensureBelarusCountry(input);
+        if (!value) {
+            input.value = '';
+            return;
+        }
+        if (iti && typeof iti.setNumber === 'function') {
+            iti.setNumber(String(value), 'by');
+            return;
+        }
+        input.value = String(value);
     }
 
     phoneInputs.forEach(function (input) {
@@ -119,34 +114,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (typeof window.intlTelInput === 'function') {
             var iti = window.intlTelInput(input, {
-                initialCountry: 'auto',
-                separateDialCode: false,
+                initialCountry: 'by',
+                onlyCountries: ['by'],
+                separateDialCode: true,
                 nationalMode: false,
                 autoPlaceholder: 'polite',
                 countrySearch: false,
                 formatOnDisplay: true,
-                geoIpLookup: function (callback) {
-                    fetch('https://ipapi.co/json/')
-                        .then(function (res) { return res.json(); })
-                        .then(function (data) { callback((data && data.country_code ? data.country_code : 'ru')); })
-                        .catch(function () { callback('ru'); });
-                }
+                allowDropdown: false
             });
             itiMap.set(input, iti);
+            ensureBelarusCountry(input);
         }
 
         input.addEventListener('input', function () {
             input.value = input.value.replace(/[^0-9+()\-\s]/g, '');
-            input.setCustomValidity('');
-
-            // Auto-detect country from typed prefix (+375..., 375..., +7..., etc).
-            var iti = itiMap.get(input);
-            if (iti && typeof iti.setCountry === 'function') {
-                var iso2 = getDetectedIso2ByDialPrefix(input.value);
-                if (iso2) {
-                    iti.setCountry(iso2);
-                }
+            var digits = digitsOnly(input.value);
+            if (input.value.indexOf('+') === 0 || digits.indexOf('375') === 0 || (digits.indexOf('80') === 0 && digits.length >= 11)) {
+                var national = extractBelarusNationalDigits(input.value);
+                if (national) input.value = national;
             }
+            input.setCustomValidity('');
+            ensureBelarusCountry(input);
         });
 
         input.addEventListener('blur', function () {
@@ -155,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             if (!isValidPhone(input)) {
-                input.setCustomValidity('Номер телефона неправильный');
+                input.setCustomValidity('Введите корректный белорусский номер (+375 XX XXX XX XX)');
             } else {
                 setInputToInternationalValue(input);
                 input.setCustomValidity('');
@@ -175,15 +164,22 @@ document.addEventListener('DOMContentLoaded', function () {
             for (var i = 0; i < tels.length; i++) {
                 var tel = tels[i];
                 if (!isValidPhone(tel)) {
-                    tel.setCustomValidity('Номер телефона неправильный');
+                    tel.setCustomValidity('Введите корректный белорусский номер (+375 XX XXX XX XX)');
                     tel.reportValidity();
                     event.preventDefault();
                     return;
                 }
-                setInputToInternationalValue(tel);
+                setInputFullPhoneForSubmit(tel);
                 tel.setCustomValidity('');
             }
         },
         true
     );
+
+    window.AppPhoneMask = {
+        ensureBelarus: ensureBelarusCountry,
+        normalize: getFullInternationalNumber,
+        isValid: isValidPhone,
+        setValue: setPhoneValue
+    };
 });

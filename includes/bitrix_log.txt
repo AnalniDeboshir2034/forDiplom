@@ -1,0 +1,78 @@
+2026-05-19 10:59:37 | HTTP: 401 | Форма: Модальная форма в хедере
+Данные: Array
+(
+    [fields] => Array
+        (
+            [TITLE] => Заявка с сайта Медикатор ру - Модальная форма в хедере
+            [NAME] => Елизавета
+            [PHONE] => Array
+                (
+                    [0] => Array
+                        (
+                            [VALUE] => +3752945687285
+                            [VALUE_TYPE] => WORK
+                        )
+
+                )
+
+            [SOURCE_ID] => WEB
+            [SOURCE_DESCRIPTION] => Модальная форма в хедере на сайте
+            [ASSIGNED_BY_ID] => 1
+            [STATUS_ID] => NEW
+            [COMMENTS] => Форма: Модальная форма в хедере
+Имя: Елизавета
+Телефон: +3752945687285
+Удобное время: 12:00
+Сообщение: 
+
+Дата: 19.05.2026 10:59:37
+        )
+
+)
+
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-05-30 15:09:02 | HTTP: 401 | Форма: Модальная форма в хедере
+Данные: Array
+(
+    [fields] => Array
+        (
+            [TITLE] => Заявка с сайта Медикатор ру - Модальная форма в хедере
+            [NAME] => 2
+            [PHONE] => Array
+                (
+                    [0] => Array
+                        (
+                            [VALUE] => +375111111111
+                            [VALUE_TYPE] => WORK
+                        )
+
+                )
+
+            [SOURCE_ID] => WEB
+            [SOURCE_DESCRIPTION] => Модальная форма в хедере на сайте
+            [ASSIGNED_BY_ID] => 1
+            [STATUS_ID] => NEW
+            [COMMENTS] => Форма: Модальная форма в хедере
+Имя: 2
+Телефон: +375111111111
+Удобное время: 1
+Сообщение: 1
+
+Дата: 30.05.2026 15:09:02
+        )
+
+)
+
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+

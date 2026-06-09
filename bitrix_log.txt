@@ -1,0 +1,56 @@
+2026-06-07 17:53:35 | HTTP: 401
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 17:54:08 | HTTP: 401
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 17:54:14 | HTTP: 401
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 17:54:37 | HTTP: 401 | Форма: Свяжитесь с нами
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 17:56:44 | HTTP: 401 | Форма: Свяжитесь с нами
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 18:01:21 | HTTP: 401 | Форма: Свяжитесь с нами
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+
+2026-06-07 18:02:31 | HTTP: 401 | Форма: Расчёт стоимости
+Ответ: Array
+(
+    [error] => INVALID_CREDENTIALS
+    [error_description] => Invalid request credentials
+)
+
+

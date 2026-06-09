@@ -39,5 +39,5 @@ while ($res && ($row = $res->fetch_assoc())) {
 }
 $stmt->close();
 
-app_json(['success' => true, 'order' => $order, 'items' => $items]);
+app_json(['success' => true, 'order' => app_localize_order_row($order), 'items' => $items]);
 

@@ -32,11 +32,6 @@ $totalRows = 0;
 $totalPages = 1;
 
 $reviews = [];
-function admin_review_status_label(string $status): string
-{
-    $map = ['pending' => 'На модерации', 'approved' => 'Одобрен', 'rejected' => 'Отклонен'];
-    return $map[$status] ?? $status;
-}
 if (db_table_exists($mysqli, 'reviews')) {
     if ($statusFilter === '') {
         $countRes = $mysqli->query("SELECT COUNT(*) AS cnt FROM reviews");
@@ -91,7 +86,7 @@ admin_page_start('Отзывы');
         <table>
             <thead>
             <tr>
-                <th>ID</th>
+                <th>Номер</th>
                 <th>Заказ</th>
                 <th>Пользователь</th>
                 <th>Оценка</th>
@@ -108,7 +103,7 @@ admin_page_start('Отзывы');
                     <td><?= htmlspecialchars((string)($r['user_login'] ?? '')) ?></td>
                     <td><?= (int)$r['rating'] ?></td>
                     <td><?= nl2br(htmlspecialchars((string)$r['text'])) ?></td>
-                    <td><?= htmlspecialchars(admin_review_status_label((string)$r['status'])) ?></td>
+                    <td><?= htmlspecialchars(app_review_status_label((string)$r['status'])) ?></td>
                     <td>
                         <form method="post" style="display:flex;gap:8px;flex-wrap:wrap;">
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">

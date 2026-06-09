@@ -50,7 +50,7 @@ if ($error) {
         <div class="grid">
             <div>
                 <label>Телефон</label>
-                <input name="contact_phone" value="<?= htmlspecialchars($settings['contacts']['phone']) ?>" placeholder="+7 ...">
+                <input name="contact_phone" value="<?= htmlspecialchars($settings['contacts']['phone']) ?>" placeholder="+375 ...">
             </div>
             <div>
                 <label>Email</label>

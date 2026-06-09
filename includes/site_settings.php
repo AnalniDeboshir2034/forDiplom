@@ -9,7 +9,7 @@ function get_default_site_settings()
 {
     return [
         'contacts' => [
-            'phone' => '+7 (800) 123-45-67',
+            'phone' => '+375 (29) 123-45-67',
             'email' => 'info@medicator.ru',
             'address' => 'г. Москва, ул. Примерная, 1',
             'work_hours' => 'Пн-Пт: 9:00 — 18:00',

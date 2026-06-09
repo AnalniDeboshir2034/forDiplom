@@ -1,6 +1,7 @@
 <?php
 // includes/handle_bitrix_form.php
-$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/o4k69x5rthf0grzi/crm.lead.add.json';
+require_once __DIR__ . '/auth_lib.php';
+$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/y91iqahj9bllr1gt/crm.lead.add.json';
 
 header('Content-Type: application/json');
 
@@ -17,12 +18,7 @@ $form_type = htmlspecialchars(trim($_POST['form_type'] ?? 'Контактная 
 
 function is_valid_phone_prefix($phone)
 {
-    $normalized = preg_replace('/[\s\-\(\)]/', '', (string)$phone);
-    if ($normalized === '') {
-        return false;
-    }
-
-    return preg_match('/^(\+\d{6,15}|\d{6,15})$/', $normalized) === 1;
+    return app_is_valid_phone(app_normalize_phone((string)$phone));
 }
 
 if (empty($name) || empty($phone)) {
@@ -44,7 +40,7 @@ $leadData = [
         'SOURCE_DESCRIPTION' => $form_type . ' на сайте',
         'ASSIGNED_BY_ID' => 1,
         'STATUS_ID' => 'NEW',
-        'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nУдобное время: $callbackTime\nСообщение: $message\n\nДата: " . date('d.m.Y H:i:s'),
+        'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nУдобное время: $callbackTime\nСообщение: $message\n\nДата: " . date('d.m.Y H:i'),
     ]
 ];
 

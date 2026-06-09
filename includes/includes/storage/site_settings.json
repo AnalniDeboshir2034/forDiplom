@@ -1,0 +1,27 @@
+{
+    "contacts": {
+        "phone": "+375296052273",
+        "email": "aleksfinski@gmail.com",
+        "address": "ул. Толбухина, д.2",
+        "work_hours": "Пн-Пт: 9:00 — 18:00"
+    },
+    "header": {
+        "brand_name": "7 company",
+        "lead_button_text": "Оставить заявку"
+    },
+    "footer": {
+        "company_description": "Профессиональные медикаторы-дозаторы",
+        "copyright": "© 2026  medikator.ru"
+    },
+    "index": {
+        "hero_title_top": "МЕДИКАТОРЫ",
+        "hero_title_bottom": "ДЛЯ ХОЗЯЙСТВ",
+        "hero_text": "Точное дозирование препаратов и добавок в систему водоснабжения. Надёжные решения для птицеводства, свиноводства и животноводства."
+    },
+    "containers": {
+        "index_cta_title": "РАССЧИТАЕМ СТОИМОСТЬ",
+        "index_cta_subtitle": "ПОД ВАШ ЗАПРОС",
+        "contacts_intro_title": "СВЯЖИТЕСЬ",
+        "contacts_intro_subtitle": "С НАМИ"
+    }
+}

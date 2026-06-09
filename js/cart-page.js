@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var subtotalEl = document.getElementById('cartSubtotal');
     var discountEl = document.getElementById('cartDiscount');
     var totalEl = document.getElementById('cartTotal');
+    var checkoutTotalValueEl = document.getElementById('cartCheckoutTotalValue');
+    var checkoutTotalMetaEl = document.getElementById('cartCheckoutTotalMeta');
 
     function getCartRows() {
         var cart = window.CartStorage.readItems();
@@ -37,6 +39,24 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/'/g, '&#039;');
     }
 
+    function formatMoneyByn(value) {
+        return Number(value || 0).toFixed(2) + ' BYN';
+    }
+
+    function updateCheckoutTotalDisplay(subtotal, discount, total) {
+        if (checkoutTotalValueEl) {
+            checkoutTotalValueEl.textContent = formatMoneyByn(total);
+        }
+        if (checkoutTotalMetaEl) {
+            var discountNum = Number(discount || 0);
+            if (discountNum > 0) {
+                checkoutTotalMetaEl.textContent = 'Сумма: ' + formatMoneyByn(subtotal) + ' · Скидка: ' + formatMoneyByn(discount);
+            } else {
+                checkoutTotalMetaEl.textContent = '';
+            }
+        }
+    }
+
     function render() {
         var rows = getCartRows();
         if (!rows.length) {
@@ -44,9 +64,10 @@ document.addEventListener('DOMContentLoaded', function () {
             listBlock.style.display = 'none';
             sidebar.style.display = 'none';
             listBlock.innerHTML = '';
-            if (subtotalEl) subtotalEl.textContent = '0.00';
-            if (discountEl) discountEl.textContent = '0.00';
-            if (totalEl) totalEl.textContent = '0.00';
+            if (subtotalEl) subtotalEl.textContent = formatMoneyByn(0);
+            if (discountEl) discountEl.textContent = formatMoneyByn(0);
+            if (totalEl) totalEl.textContent = formatMoneyByn(0);
+            updateCheckoutTotalDisplay(0, 0, 0);
             return;
         }
 
@@ -92,9 +113,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(parseApiResponse)
             .then(function (data) {
                 if (!data || !data.success) return;
-                subtotalEl.textContent = Number(data.subtotal || 0).toFixed(2);
-                discountEl.textContent = Number(data.discount_total || 0).toFixed(2);
-                totalEl.textContent = Number(data.total || 0).toFixed(2);
+                subtotalEl.textContent = formatMoneyByn(data.subtotal);
+                discountEl.textContent = formatMoneyByn(data.discount_total);
+                totalEl.textContent = formatMoneyByn(data.total);
+                updateCheckoutTotalDisplay(data.subtotal, data.discount_total, data.total);
             })
             .catch(function () {});
     }
@@ -137,6 +159,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         checkoutModal.classList.add('is-active');
         checkoutModal.setAttribute('aria-hidden', 'false');
+
+        var promoInput = checkoutForm ? checkoutForm.querySelector('input[name="promo_code"]') : null;
+        recalcTotals(promoInput ? String(promoInput.value || '').trim() : '');
+
+        var phoneInput = checkoutForm ? checkoutForm.querySelector('input[name="phone"]') : null;
+        if (phoneInput && window.AppPhoneMask && typeof window.AppPhoneMask.ensureBelarus === 'function') {
+            window.AppPhoneMask.ensureBelarus(phoneInput);
+        }
     }
 
     function closeCheckout() {
@@ -211,7 +241,13 @@ document.addEventListener('DOMContentLoaded', function () {
         var phoneInput = checkoutForm.querySelector('input[name="phone"]');
         var emailInput = checkoutForm.querySelector('input[name="email"]');
         if (nameInput && profile.name) nameInput.value = profile.name;
-        if (phoneInput && profile.phone) phoneInput.value = profile.phone;
+        if (phoneInput && profile.phone) {
+            if (window.AppPhoneMask && typeof window.AppPhoneMask.setValue === 'function') {
+                window.AppPhoneMask.setValue(phoneInput, profile.phone);
+            } else {
+                phoneInput.value = profile.phone;
+            }
+        }
         if (emailInput && profile.email) emailInput.value = profile.email;
 
         function syncDeliveryFields() {
@@ -257,6 +293,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var fd = new FormData(checkoutForm);
             fd.set('items', JSON.stringify(getItemsPayload()));
+            if (phoneInput && window.AppPhoneMask && typeof window.AppPhoneMask.normalize === 'function') {
+                fd.set('phone', window.AppPhoneMask.normalize(phoneInput));
+            }
 
             fetch('includes/api_checkout.php', {
                 method: 'POST',

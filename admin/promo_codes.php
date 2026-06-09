@@ -7,20 +7,37 @@ require_once __DIR__ . '/../includes/mail_lib.php';
 
 $msg = '';
 
+function validate_promo_value(string $type, float $value): ?string
+{
+    if ($value < 0) {
+        return 'Скидка не может быть меньше нуля';
+    }
+    if ($type === 'percent' && $value > 99) {
+        return 'Процент скидки не может быть больше 99%';
+    }
+    return null;
+}
+
 if (isset($_POST['create'])) {
     $code = mb_strtoupper(trim((string)($_POST['code'] ?? '')), 'UTF-8');
     $type = trim((string)($_POST['type'] ?? 'percent'));
     $value = (float)($_POST['value'] ?? 0);
     $active = isset($_POST['active']) ? 1 : 0;
+    
     if ($code !== '' && in_array($type, ['percent', 'fixed'], true)) {
-        $stmt = $mysqli->prepare("INSERT INTO promo_codes (code, type, value, active) VALUES (?, ?, ?, ?)");
-        if ($stmt) {
-            $stmt->bind_param('ssdi', $code, $type, $value, $active);
-            $stmt->execute();
-            $stmt->close();
-            $msg = 'Промокод создан';
+        $promoError = validate_promo_value($type, $value);
+        if ($promoError !== null) {
+            $msg = 'Ошибка: ' . $promoError;
         } else {
-            $msg = 'Нужны миграции promo_codes';
+            $stmt = $mysqli->prepare("INSERT INTO promo_codes (code, type, value, active) VALUES (?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('ssdi', $code, $type, $value, $active);
+                $stmt->execute();
+                $stmt->close();
+                $msg = 'Промокод создан';
+            } else {
+                $msg = 'Нужны миграции promo_codes';
+            }
         }
     }
 }
@@ -43,13 +60,19 @@ if (isset($_POST['update'])) {
     $type = trim((string)($_POST['type'] ?? 'percent'));
     $value = (float)($_POST['value'] ?? 0);
     $active = isset($_POST['active']) ? 1 : 0;
+    
     if ($id > 0 && in_array($type, ['percent', 'fixed'], true)) {
-        $stmt = $mysqli->prepare("UPDATE promo_codes SET type = ?, value = ?, active = ? WHERE id = ? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('sdii', $type, $value, $active, $id);
-            $stmt->execute();
-            $stmt->close();
-            $msg = 'Обновлено';
+        $promoError = validate_promo_value($type, $value);
+        if ($promoError !== null) {
+            $msg = 'Ошибка: ' . $promoError;
+        } else {
+            $stmt = $mysqli->prepare("UPDATE promo_codes SET type = ?, value = ?, active = ? WHERE id = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('sdii', $type, $value, $active, $id);
+                $stmt->execute();
+                $stmt->close();
+                $msg = 'Обновлено';
+            }
         }
     }
 }
@@ -132,14 +155,14 @@ admin_page_start('Промокоды');
         </div>
         <div>
             <label>Тип</label>
-            <select name="type">
-                <option value="percent">percent</option>
-                <option value="fixed">fixed</option>
+            <select name="type" id="promo_type_create">
+                <option value="percent">Процент (макс. 99%)</option>
+                <option value="fixed">Фиксированная сумма</option>
             </select>
         </div>
         <div>
             <label>Значение</label>
-            <input name="value" type="number" step="0.01" value="10">
+            <input name="value" type="number" step="0.01" min="0" value="10" id="promo_value_create" required>
         </div>
         <div>
             <label>&nbsp;</label>
@@ -161,67 +184,142 @@ admin_page_start('Промокоды');
     <?php if (!db_table_exists($mysqli, 'promo_codes')): ?>
         <p class="muted">Таблица promo_codes не найдена. Запусти миграции.</p>
     <?php else: ?>
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Код</th>
-                <th>Тип</th>
-                <th>Значение</th>
-                <th>Активность</th>
-                <th>Использования</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($promoCodes as $p): ?>
-                <tr>
-                    <td>#<?= (int)$p['id'] ?></td>
-                    <td><strong><?= htmlspecialchars((string)$p['code']) ?></strong></td>
-                    <td>
-                        <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                            <select name="type" style="max-width:140px;">
-                                <option value="percent" <?= ((string)$p['type'] === 'percent') ? 'selected' : '' ?>>процент</option>
-                                <option value="fixed" <?= ((string)$p['type'] === 'fixed') ? 'selected' : '' ?>>фикс</option>
-                            </select>
-                    </td>
-                    <td>
-                            <input name="value" type="number" step="0.01" value="<?= htmlspecialchars((string)$p['value']) ?>" style="max-width:120px;">
-                    </td>
-                    <td>
-                            <label style="display:flex;gap:8px;align-items:center;">
-                                <input type="checkbox" name="active" value="1" <?= !empty($p['active']) ? 'checked' : '' ?> style="width:auto;">
-                                активен
-                            </label>
-                    </td>
-                    <td class="muted"><?= (int)($p['uses_count'] ?? 0) ?> / <?= htmlspecialchars((string)($p['max_uses'] ?? '∞')) ?></td>
-                    <td>
-                            <button type="submit" name="update" value="1">Сохранить</button>
-                        </form>
-                        <form method="post" onsubmit="return confirm('Удалить промокод?');" style="margin-top:6px;">
-                            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                            <button type="submit" name="delete" value="1" class="danger">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div style="overflow-x: auto; overflow-y: clip;">
+            <table style="min-width: 800px;">
+                <thead>
+                    <tr>
+                        <th>Номер</th>
+                        <th>Код</th>
+                        <th>Тип</th>
+                        <th>Значение</th>
+                        <th>Активность</th>
+                        <th>Использования</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($promoCodes as $p): ?>
+                    <tr>
+                        <td>#<?= (int)$p['id'] ?></td>
+                        <td><strong><?= htmlspecialchars((string)$p['code']) ?></strong></td>
+                        <td>
+                            <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                                <select name="type" style="max-width:140px;" class="promo_type_update" data-id="<?= (int)$p['id'] ?>">
+                                    <option value="percent" <?= ((string)$p['type'] === 'percent') ? 'selected' : '' ?>>Процент (макс. 99%)</option>
+                                    <option value="fixed" <?= ((string)$p['type'] === 'fixed') ? 'selected' : '' ?>>Фиксированная сумма</option>
+                                </select>
+                        </td>
+                        <td>
+                                <input name="value" type="number" step="0.01" min="0" value="<?= htmlspecialchars((string)$p['value']) ?>" style="max-width:120px;" class="promo_value_update" data-id="<?= (int)$p['id'] ?>" required>
+                        </td>
+                        <td>
+                                <label style="display:flex;gap:8px;align-items:center;">
+                                    <input type="checkbox" name="active" value="1" <?= !empty($p['active']) ? 'checked' : '' ?> style="width:auto;">
+                                    активен
+                                </label>
+                        </td>
+                        <td class="muted"><?= (int)($p['uses_count'] ?? 0) ?> / <?= htmlspecialchars((string)($p['max_uses'] ?? '∞')) ?></td>
+                        <td>
+                                <button type="submit" name="update" value="1">Сохранить</button>
+                            </form>
+                            <form method="post" onsubmit="return confirm('Удалить промокод?');" style="margin-top:6px;">
+                                <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                                <button type="submit" name="delete" value="1" class="danger">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 </div>
-<?php if (isset($totalPages) && $totalPages > 1): ?>
-<div class="card">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <?php if ($page > 1): ?>
-            <a href="<?= htmlspecialchars(admin_url('promo_codes.php?page=' . ($page - 1)), ENT_QUOTES, 'UTF-8') ?>">← Назад</a>
-        <?php endif; ?>
-        <?php if ($page < $totalPages): ?>
-            <a href="<?= htmlspecialchars(admin_url('promo_codes.php?page=' . ($page + 1)), ENT_QUOTES, 'UTF-8') ?>">Вперед →</a>
-        <?php endif; ?>
-    </div>
-</div>
-<?php endif; ?>
+
+<script>
+// Клиентская валидация на лету (чтобы дурак не ввёл 100%)
+document.addEventListener('DOMContentLoaded', function() {
+    // Для формы создания
+    const createType = document.getElementById('promo_type_create');
+    const createValue = document.getElementById('promo_value_create');
+    
+    function validatePromoValue(valueInput, typeSelect) {
+        if (!valueInput) return true;
+        const val = parseFloat(valueInput.value);
+        if (isNaN(val) || val < 0) {
+            valueInput.setCustomValidity('Скидка не может быть меньше нуля');
+            valueInput.style.borderColor = '#c62828';
+            return false;
+        }
+        if (typeSelect && typeSelect.value === 'percent' && val > 99) {
+            valueInput.setCustomValidity('Процент скидки не может быть больше 99%');
+            valueInput.style.borderColor = '#c62828';
+            return false;
+        }
+        valueInput.setCustomValidity('');
+        valueInput.style.borderColor = '';
+        return true;
+    }
+    
+    if (createType && createValue) {
+        createType.addEventListener('change', function() {
+            if (createType.value === 'percent') {
+                createValue.max = 99;
+                if (parseFloat(createValue.value) > 99) createValue.value = 99;
+            } else {
+                createValue.max = '';
+                createValue.removeAttribute('max');
+            }
+            validatePromoValue(createValue, createType);
+        });
+        createValue.addEventListener('input', function() {
+            validatePromoValue(createValue, createType);
+        });
+        if (createType.value === 'percent') {
+            createValue.max = 99;
+            createValue.min = 0;
+        }
+    }
+    
+    // Для каждой строки обновления
+    document.querySelectorAll('.promo_type_update').forEach(function(select) {
+        const id = select.getAttribute('data-id');
+        const valueInput = document.querySelector('.promo_value_update[data-id="' + id + '"]');
+        
+        function validateRow() {
+            validatePromoValue(valueInput, select);
+        }
+        
+        if (select && valueInput) {
+            select.addEventListener('change', function() {
+                if (select.value === 'percent') {
+                    valueInput.max = 99;
+                    if (parseFloat(valueInput.value) > 99) valueInput.value = 99;
+                } else {
+                    valueInput.removeAttribute('max');
+                }
+                validateRow();
+            });
+            valueInput.addEventListener('input', validateRow);
+            valueInput.min = 0;
+            if (select.value === 'percent') valueInput.max = 99;
+            validateRow();
+        }
+    });
+
+    document.querySelectorAll('form').forEach(function(form) {
+        var typeSelect = form.querySelector('#promo_type_create, .promo_type_update');
+        var valueInput = form.querySelector('#promo_value_create, .promo_value_update');
+        if (!typeSelect || !valueInput) return;
+        form.addEventListener('submit', function(e) {
+            if (!validatePromoValue(valueInput, typeSelect)) {
+                e.preventDefault();
+                valueInput.reportValidity();
+            }
+        });
+    });
+});
+</script>
 
 <div class="card">
     <h2>Рассылка промокодов</h2>
@@ -231,7 +329,7 @@ admin_page_start('Промокоды');
             <select name="promo_id" required>
                 <option value="">Выбери промокод</option>
                 <?php foreach ($promoCodes as $p): ?>
-                    <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['code']) ?> (<?= htmlspecialchars((string)$p['type']) ?> <?= htmlspecialchars((string)$p['value']) ?>)</option>
+                    <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['code']) ?> (<?= htmlspecialchars(app_promo_type_label((string)$p['type'])) ?> <?= htmlspecialchars((string)$p['value']) ?>)</option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -252,4 +350,3 @@ admin_page_start('Промокоды');
 </div>
 
 <?php admin_page_end(); ?>
-

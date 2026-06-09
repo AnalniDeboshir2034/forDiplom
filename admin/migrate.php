@@ -54,7 +54,7 @@ admin_page_start('Миграции БД');
         <thead>
         <tr>
             <th>Шаг</th>
-            <th>OK</th>
+            <th>Результат</th>
             <th>Время</th>
             <th>Ошибка</th>
         </tr>

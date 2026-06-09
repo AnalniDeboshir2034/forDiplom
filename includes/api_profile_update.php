@@ -28,6 +28,19 @@ if ($email !== '' && !app_is_email($email)) {
     app_json(['success' => false, 'message' => 'Некорректный e-mail'], 422);
 }
 
+$unp = app_normalize_unp($unp);
+if ($phone !== '') {
+    $phone = app_normalize_phone($phone);
+}
+if ($accountType === 'legal') {
+    $legalError = app_validate_legal_profile_fields($companyName, $representativeName, $unp, $phone, $address);
+    if ($legalError !== null) {
+        app_json(['success' => false, 'message' => $legalError], 422);
+    }
+} elseif ($phone !== '' && !app_is_valid_phone($phone)) {
+    app_json(['success' => false, 'message' => 'Введите корректный номер телефона'], 422);
+}
+
 // Update basics (only if columns exist; migrations should add them).
 $stmt = $mysqli->prepare("UPDATE `user` SET `name` = ?, `email` = ?, `unp` = ?, `account_type` = ?, `company_name` = ?, `representative_name` = ?, `phone` = ?, `address` = ? WHERE id = ? LIMIT 1");
 if ($stmt) {

@@ -1,14 +1,24 @@
 <?php 
 require_once 'includes/config.php';
+require_once __DIR__ . '/includes/auth_lib.php';
 require_once 'includes/site_settings.php';
 require_once __DIR__ . '/includes/seo.php';
+
+// Функция проверки существования таблицы
+if (!function_exists('db_table_exists')) {
+    function db_table_exists($mysqli, $table_name) {
+        $result = $mysqli->query("SHOW TABLES LIKE '" . $mysqli->real_escape_string($table_name) . "'");
+        return $result && $result->num_rows > 0;
+    }
+}
+
 $siteSettings = load_site_settings();
 
 if (!$mysqli || $mysqli->connect_error) {
     die("❌ Нет соединения с БД");
 }
 
-$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/o4k69x5rthf0grzi/crm.lead.add.json';
+$BITRIX_WEBHOOK = 'https://k7s.bitrix24.by/rest/25370/y91iqahj9bllr1gt/crm.lead.add.json';
 
 $form_success = false;
 $form_error = '';
@@ -16,12 +26,7 @@ $form_data = [];
 
 function is_valid_phone_prefix($phone)
 {
-    $normalized = preg_replace('/[\s\-\(\)]/', '', (string)$phone);
-    if ($normalized === '') {
-        return false;
-    }
-
-    return preg_match('/^(\+\d{6,15}|\d{6,15})$/', $normalized) === 1;
+    return app_is_valid_phone(app_normalize_phone((string)$phone));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
@@ -46,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'])) {
                 'SOURCE_DESCRIPTION' => $form_type . ' на сайте',
                 'ASSIGNED_BY_ID' => 1,
                 'STATUS_ID' => 'NEW',
-                'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nСообщение: $message\n\nДата: " . date('d.m.Y H:i:s'),
+                'COMMENTS' => "Форма: $form_type\nИмя: $name\nТелефон: $phone\nСообщение: $message\n\nДата: " . date('d.m.Y H:i'),
             ]
         ];
         
@@ -116,6 +121,33 @@ if (empty($popular_products)) {
         }
     }
 }
+
+$approved_reviews = [];
+
+// ПРОВЕРКА СУЩЕСТВОВАНИЯ ТАБЛИЦЫ reviews - ИСПРАВЛЕНО
+$table_check = $mysqli->query("SHOW TABLES LIKE 'reviews'");
+if ($table_check && $table_check->num_rows > 0) {
+
+    $reviewsSql = "SELECT 
+                        r.*, 
+                        u.login,
+                        u.name
+                    FROM reviews r
+                    LEFT JOIN user u ON u.id = r.user_id
+                    WHERE r.status = 'approved'
+                    ORDER BY r.id DESC
+                    LIMIT 12";
+
+    $reviewsResult = $mysqli->query($reviewsSql);
+
+    if ($reviewsResult && $reviewsResult->num_rows > 0) {
+
+        while ($review = $reviewsResult->fetch_assoc()) {
+            $approved_reviews[] = $review;
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -212,7 +244,7 @@ if (empty($popular_products)) {
                 <p class="section-subtitle">Подберите медикатор-дозатор под задачи вашего хозяйства</p>
                 
                 <div class="categories__grid">
-                    <a href="<?= htmlspecialchars(app_url('catalog.php#cat=masterpro'), ENT_QUOTES, 'UTF-8') ?>" class="category-card category-card--gradient-1">
+                    <a href="<?= htmlspecialchars(app_url('catalog.php#cat=master-pro'), ENT_QUOTES, 'UTF-8') ?>" class="category-card category-card--gradient-1">
                         <div class="category-card__image">
                             <img src="products/MASTERPRO.png" alt="Медикаторы Master Pro">
                         </div>
@@ -242,51 +274,6 @@ if (empty($popular_products)) {
             </div>
         </section>
 
-<section class="advantages">
-    <div class="container">
-        <div class="advantages__head">
-            <h2 class="section-title">ПОЧЕМУ ВЫБИРАЮТ <br> <span class="gradient-text">НАШИ ДОЗАТОРЫ</span></h2>
-            <a href="#" class="advantages-calc-btn open-modal-form" data-form="advantages">Получить расчет <span>→</span></a>
-        </div>
-        
-        <div class="advantages__grid">
-            <div class="advantage-card">
-                <div class="advantage-card__icon">🧪</div>
-                <h3 class="advantage-card__title">Устойчивость к агрессивным средам</h3>
-                <p class="advantage-card__desc">Корпус из химически стойких материалов выдерживает кислоты и щёлочи</p>
-            </div>
-
-            <div class="advantage-card">
-                <div class="advantage-card__icon">💰</div>
-                <h3 class="advantage-card__title">Экономия до 30%</h3>
-                <p class="advantage-card__desc">Снижение расхода препаратов за счёт точного пропорционального дозирования</p>
-            </div>
-
-            <div class="advantage-card">
-                <div class="advantage-card__icon">🔧</div>
-                <h3 class="advantage-card__title">Простой монтаж</h3>
-                <p class="advantage-card__desc">Установка на трубопровод за 30 минут без специального инструмента</p>
-            </div>
-
-            <div class="advantage-card">
-                <div class="advantage-card__icon">✅</div>
-                <h3 class="advantage-card__title">Гарантия 3 года</h3>
-                <p class="advantage-card__desc">Полная гарантия на все компоненты и бесплатная замена деталей</p>
-            </div>
-
-            <div class="advantage-card">
-                <div class="advantage-card__icon">👨‍💼</div>
-                <h3 class="advantage-card__title">Персональный менеджер</h3>
-                <p class="advantage-card__desc">Всегда на связи: подбор оборудования, консультации, техподдержка</p>
-            </div>
-            <div class="advantage-card">
-                <div class="advantage-card__icon">🚀</div>
-                <h3 class="advantage-card__title">Быстрая доставка</h3>
-                <p class="advantage-card__desc">Доставка по всей России в кратчайшие сроки</p>
-            </div>
-        </div>
-    </div>
-</section>
 
 <section class="how-we-work-steps">
     <div class="container">
@@ -437,68 +424,74 @@ if (empty($popular_products)) {
     </div>
 </section>
  
-      <section class="reviews">
+<section class="reviews">
     <div class="container">
-        <h2 class="section-title">Отзывы наших клиентов</h2>
-        
-        <div class="swiper reviews-swiper">
-            <div class="swiper-wrapper">
-                <div class="swiper-slide">
-                    <div class="review-card">
-                        <div class="review-rating">5,0 ★★★★★</div>
-                        <p class="review-text">
-                            Установили медикаторы Dosatron на 3 фермы. За полгода расход препаратов снизился на 20%. Отличная точность дозирования.
-                        </p>
-                        <div class="review-author">
-                            <div class="review-name">Алексей Петров</div>
-                            <div class="review-company">Агрохолдинг «Зелёная Долина»</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="swiper-slide">
-                    <div class="review-card">
-                        <div class="review-rating">5,0 ★★★★★</div>
-                        <p class="review-text">
-                            Работаем с Master Pro уже 2 года. Надёжное оборудование, ни одной поломки. Техподдержка всегда на связи. Рекомендуем всем, кто ищет качественное решение для дозирования.
-                        </p>
-                        <div class="review-author">
-                            <div class="review-name">Ирина Смирнова</div>
-                            <div class="review-company">ООО «Птицефабрика Южная»</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="swiper-slide">
-                    <div class="review-card">
-                        <div class="review-rating">5,0 ★★★★★</div>
-                        <p class="review-text">
-                            Заказывали MixRite для свиноводческого комплекса. Быстрая доставка, помогли с установкой. Рекомендую!
-                        </p>
-                        <div class="review-author">
-                            <div class="review-name">Дмитрий Козлов</div>
-                            <div class="review-company">КФХ Казань Д.А.</div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="swiper-slide">
+        <h2 class="section-title">
+            ОТЗЫВЫ <span class="gradient-text">КЛИЕНТОВ</span>
+        </h2>
+
+        <p class="section-subtitle">
+            Проверенные отзывы после модерации
+        </p>
+
+        <?php if (!empty($approved_reviews)): ?>
+
+            <div class="reviews-grid">
+
+                <?php foreach ($approved_reviews as $review): ?>
+
+                    <?php
+                        $rating = (int)($review['rating'] ?? 5);
+                        $rating = max(1, min(5, $rating));
+
+                        $authorName = trim((string)(
+                            $review['name']
+                            ?? $review['login']
+                            ?? 'Пользователь'
+                        ));
+                    ?>
+
                     <div class="review-card">
-                        <div class="review-rating">5,0 ★★★★★</div>
-                        <p class="review-text">
-                            Отличное оборудование! Пользуемся уже год, нареканий нет. Дозаторы работают как часы.
-                        </p>
-                        <div class="review-author">
-                            <div class="review-name">Сергей Иванов</div>
-                            <div class="review-company">Агрофирма «Рассвет»</div>
+
+                        <div class="review-stars">
+                            <?= str_repeat('★', $rating) ?>
                         </div>
+
+                        <div class="review-text">
+                            <?= nl2br(htmlspecialchars((string)$review['text'])) ?>
+                        </div>
+
+                        <div class="review-bottom">
+
+                            <div class="review-user">
+                                <?= htmlspecialchars($authorName) ?>
+                            </div>
+
+                            <div class="review-status">
+                                Проверенный отзыв
+                            </div>
+
+                        </div>
+
                     </div>
-                </div>
+
+                <?php endforeach; ?>
+
             </div>
-            <div class="swiper-pagination"></div>
-        </div>
+
+        <?php else: ?>
+
+            <div class="card" style="padding:40px;text-align:center;">
+                <h3>Пока отзывов нет</h3>
+                <p>Они появятся после модерации</p>
+            </div>
+
+        <?php endif; ?>
+
     </div>
 </section>
+
    
 <section class="contact-section">
     <div class="container">
@@ -541,7 +534,7 @@ if (empty($popular_products)) {
                     </div>
                     <div class="form-group">
                         <label>Телефон</label>
-                        <input type="tel" name="phone" placeholder="+7 (___) ___-__-__" required>
+                        <input type="tel" name="phone" placeholder="+375 (__) ___-__-__" required>
                     </div>
                     <div class="form-group">
                         <label>Сообщение</label>

@@ -1101,3 +1101,116 @@ body {
     font-size: 24px;
   }
 }
+
+/* ===== МОДАЛКА АВТОРИЗАЦИИ (приведена к твоим стилям, кнопка «Войти» — РЫЖАЯ) ===== */
+.auth-required-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+}
+
+.auth-required-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.auth-required-modal__content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 440px;
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    padding: 32px 28px 28px;
+    box-shadow: var(--shadow-md);
+    box-sizing: border-box;
+    font-family: var(--font-main);
+}
+
+/* Крестик закрытия */
+.auth-required-modal__close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f0f0f0;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #333;
+}
+
+.auth-required-modal__close:hover {
+    background: #e0e0e0;
+    transform: scale(1.05);
+}
+
+/* Заголовок */
+.auth-required-modal__content h3 {
+    margin: 0 0 12px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* Текст описания */
+.auth-required-modal__content p {
+    margin: 0 0 28px 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+/* Контейнер для двух кнопок */
+.auth-required-modal__actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+/* Базовый стиль для обеих кнопок */
+.auth-required-modal__actions button {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 40px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-family: var(--font-main);
+}
+
+/* Кнопка «Войти» — РЫЖАЯ 🔥 */
+.auth-required-modal__actions button:first-child {
+    background: var(--color-accent);
+    color: white;
+}
+
+.auth-required-modal__actions button:first-child:hover {
+    background: var(--color-accent-strong);
+    transform: translateY(-2px);
+}
+
+/* Кнопка «Регистрация» — вторичная, рамка */
+.auth-required-modal__actions button:last-child {
+    background: transparent;
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.auth-required-modal__actions button:last-child:hover {
+    border-color: var(--color-accent);
+    background: rgba(249, 115, 22, 0.05);
+}

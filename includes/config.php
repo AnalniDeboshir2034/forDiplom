@@ -133,4 +133,104 @@ $mysqli->set_charset("utf8mb4");
 
 $pdo = null;
 
-?>
+$labelsFile = __DIR__ . '/labels.php';
+if (is_file($labelsFile)) {
+    require_once $labelsFile;
+}
+
+if (!function_exists('app_order_status_label')) {
+    function app_order_status_label(string $status): string
+    {
+        $map = ['new' => 'Новый', 'paid' => 'Оплачен', 'shipped' => 'Отправлен', 'completed' => 'Завершён'];
+        return $map[$status] ?? $status;
+    }
+}
+if (!function_exists('app_order_status_labels')) {
+    function app_order_status_labels(): array
+    {
+        return ['new' => 'Новый', 'paid' => 'Оплачен', 'shipped' => 'Отправлен', 'completed' => 'Завершён'];
+    }
+}
+if (!function_exists('app_delivery_type_label')) {
+    function app_delivery_type_label(string $type): string
+    {
+        $map = ['courier' => 'Курьером', 'pickup' => 'Самовывоз'];
+        return $map[$type] ?? $type;
+    }
+}
+if (!function_exists('app_payment_type_label')) {
+    function app_payment_type_label(string $type): string
+    {
+        $map = ['invoice' => 'Счёт на email', 'card_on_delivery' => 'Картой при получении', 'erip' => 'ЕРИП'];
+        return $map[$type] ?? $type;
+    }
+}
+if (!function_exists('app_review_status_label')) {
+    function app_review_status_label(string $status): string
+    {
+        $map = ['pending' => 'На модерации', 'approved' => 'Одобрен', 'rejected' => 'Отклонён'];
+        return $map[$status] ?? $status;
+    }
+}
+if (!function_exists('app_promo_type_label')) {
+    function app_promo_type_label(string $type): string
+    {
+        $map = ['percent' => 'Процент', 'fixed' => 'Фиксированная сумма'];
+        return $map[$type] ?? $type;
+    }
+}
+if (!function_exists('app_user_role_label')) {
+    function app_user_role_label(string $role): string
+    {
+        $map = ['admin' => 'Админ', 'user' => 'Пользователь'];
+        return $map[$role] ?? $role;
+    }
+}
+if (!function_exists('app_account_type_label')) {
+    function app_account_type_label(string $type): string
+    {
+        $map = ['individual' => 'Физлицо', 'legal' => 'Юрлицо'];
+        return $map[$type] ?? $type;
+    }
+}
+if (!function_exists('app_category_label')) {
+    function app_category_label($mysqli, string $slug): string
+    {
+        $slug = trim($slug);
+        return $slug === '' ? 'Без категории' : $slug;
+    }
+}
+if (!function_exists('app_format_datetime')) {
+    function app_format_datetime(?string $value): string
+    {
+        $value = trim((string)($value ?? ''));
+        if ($value === '' || $value === '0000-00-00 00:00:00') {
+            return '';
+        }
+        $ts = strtotime($value);
+        return $ts === false ? $value : date('d.m.Y H:i', $ts);
+    }
+}
+if (!function_exists('app_format_date')) {
+    function app_format_date(?string $value): string
+    {
+        $value = trim((string)($value ?? ''));
+        if ($value === '' || $value === '0000-00-00') {
+            return '';
+        }
+        $ts = strtotime($value);
+        return $ts === false ? $value : date('d.m.Y', $ts);
+    }
+}
+if (!function_exists('app_localize_order_row')) {
+    function app_localize_order_row(array $order): array
+    {
+        $order['status_label'] = app_order_status_label((string)($order['status'] ?? ''));
+        $order['delivery_type_label'] = app_delivery_type_label((string)($order['delivery_type'] ?? ''));
+        $order['payment_type_label'] = app_payment_type_label((string)($order['payment_type'] ?? ''));
+        if (!empty($order['created_at'])) {
+            $order['created_at_label'] = app_format_datetime((string)$order['created_at']);
+        }
+        return $order;
+    }
+}
